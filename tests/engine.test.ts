@@ -220,3 +220,41 @@ describe("json-to-ts edge cases", () => {
     expect(o).toMatch(/u: \(U | string\)\[\]|u: \(.*\)\[\]/);
   });
 });
+
+describe("json-to-ts identifier safety", () => {
+  const ident = (out: string) => [...out.matchAll(/(?:interface|type) ([^\s={]+)/g)].map((m) => m[1]);
+  const valid = /^[A-Za-z_$][\w$]*$/;
+  it("never emits a type name starting with a digit", () => {
+    const o = jsonToTs('{"a":1}', "123 bad-name");
+    expect(o).toContain("export interface _123BadName {");
+    for (const n of ident(o)) expect(n).toMatch(valid);
+  });
+  it("prefixes nested names derived from digit-leading keys", () => {
+    const o = jsonToTs('{"1st":{"x":1}}', "Root");
+    expect(o).toContain("interface _1st {");
+    for (const n of ident(o)) expect(n).toMatch(valid);
+  });
+  it("falls back to Root for empty and punctuation-only names", () => {
+    for (const r of ["", "   ", "---", "!!!"]) {
+      const o = jsonToTs('{"a":1}', r);
+      expect(o).toContain("export interface Root {");
+    }
+  });
+  it("defines behavior for reserved and built-in names", () => {
+    expect(jsonToTs('{"a":1}', "string")).toContain("export interface String");
+    expect(jsonToTs('{"a":1}', "class")).toContain("export interface Class {");
+    expect(jsonToTs('{"a":1}', "Record")).toContain("export interface RecordType {");
+    expect(jsonToTs('{"a":1}', "any")).toContain("export interface AnyType {");
+    expect(jsonToTs("[1]", "type")).toContain("export type Type = number[];");
+  });
+  it("applies the Root fallback to primitive and array roots", () => {
+    expect(jsonToTs("1", "---")).toContain("export type Root = number;");
+    expect(jsonToTs("1", "123")).toContain("export type _123 = number;");
+    const o = jsonToTs('[{"a":1}]', "");
+    expect(o).toContain("export type Root = Item[];");
+    expect(ident(o).length).toBeGreaterThan(0);
+  });
+  it("keeps valid names unchanged", () => {
+    expect(jsonToTs('{"a":1}', "my_type")).toContain("interface MyType {");
+  });
+});

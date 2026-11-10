@@ -11,7 +11,15 @@ export const meta: ToolMeta = {
   recipe: { name: "JSON to TypeScript", input: '{"id":1,"name":"Ada","tags":["math","code"],"address":{"city":"London","geo":null},"orders":[{"id":1,"total":9.5},{"id":2,"total":3,"note":"gift"}]}', steps: [{ b: "json-to-ts", p: { root: "Root", exportKw: true, readonly: false } }] },
 };
 
-const pascal = (s: string) => s.replace(/[^A-Za-z0-9]+(.)?/g, (_, c) => (c ? c.toUpperCase() : "")).replace(/^(.)/, (c) => c.toUpperCase()) || "Item";
+// Global/built-in type names a generated interface would shadow; they get a "Type" suffix.
+const BUILTINS = new Set(["Object", "Array", "String", "Number", "Boolean", "Symbol", "BigInt", "Function", "Date", "Error", "Promise", "Map", "Set", "RegExp", "Record", "Partial", "Required", "Readonly", "Pick", "Omit", "Exclude", "Extract", "NonNullable", "Awaited", "Any", "Never", "Unknown", "Null", "Undefined", "Void"]);
+// Always yields a valid, capitalized TS identifier: digit-leading names get "_", empty/punctuation-only fall back.
+// Capitalizing rules out lowercase keywords and primitive names (string, class, any...); BUILTINS covers shadowed globals.
+const pascal = (s: string, fallback = "Item") => {
+  const n = s.replace(/[^A-Za-z0-9]+(.)?/g, (_, c) => (c ? c.toUpperCase() : "")).replace(/^(.)/, (c) => c.toUpperCase()) || fallback;
+  if (BUILTINS.has(n)) return `${n}Type`;
+  return /^[0-9]/.test(n) ? `_${n}` : n;
+};
 const safeKey = (k: string) => (/^[A-Za-z_$][\w$]*$/.test(k) ? k : JSON.stringify(k));
 const singular = (s: string) => (s.endsWith("ies") ? s.slice(0, -3) + "y" : s.endsWith("s") && s.length > 1 ? s.slice(0, -1) : s);
 
@@ -51,13 +59,13 @@ export function jsonToTs(json: string, root = "Root", exportKw = true, readonly 
   const ex = exportKw ? "export " : "";
   const ro = readonly ? "readonly " : "";
   const uniq = (n: string) => { let x = n, i = 2; while (used.has(x)) x = n + i++; used.add(x); return x; };
-  const render = (t: T, hint: string): string => {
+  const render = (t: T, hint: string, fb = "Item"): string => {
     switch (t.kind) {
       case "prim": return t.name;
       case "arr": { if (!t.item) return "unknown[]"; const s = render(t.item, singular(hint)); return t.item.kind === "union" ? `(${s})[]` : `${s}[]`; }
-      case "union": return t.of.map((x) => render(x, hint)).join(" | ");
+      case "union": return t.of.map((x) => render(x, hint, fb)).join(" | ");
       case "obj": {
-        const name = uniq(pascal(hint));
+        const name = uniq(pascal(hint, fb));
         const lines = [...t.props].map(([k, { t: pt, opt }]) => `  ${ro}${safeKey(k)}${opt ? "?" : ""}: ${render(pt, k)};`);
         decls.push(`${ex}interface ${name} {\n${lines.join("\n")}\n}`);
         return name;
@@ -65,8 +73,8 @@ export function jsonToTs(json: string, root = "Root", exportKw = true, readonly 
     }
   };
   const top = infer(v);
-  const r = render(top, root);
-  if (top.kind !== "obj") decls.push(`${ex}type ${uniq(pascal(root))} = ${r};`);
+  const r = render(top, root, "Root");
+  if (top.kind !== "obj") decls.push(`${ex}type ${uniq(pascal(root, "Root"))} = ${r};`);
   return decls.reverse().join("\n\n");
 }
 
