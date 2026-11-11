@@ -117,6 +117,9 @@ test("Data: JSON formatter explains errors, CSV converts both ways", async ({ pa
   await expect(out(page)).toHaveText("id IN (1001, 1002, 1003, 1004)");
   await page.goto("/json-to-typescript");
   await expect(out(page)).toContainText("export interface Root");
+  await page.getByLabel("JSON sample", { exact: true }).fill('[{"a":{"x":1}},{"a":{"y":2}},{"a":null}]');
+  await expect(out(page)).toContainText("export type Root = RootItem[];");
+  await expect(out(page)).not.toContainText("Root2");
 });
 
 test("Data: CSV to Excel builds an xlsx and reads it back", async ({ page }) => {
