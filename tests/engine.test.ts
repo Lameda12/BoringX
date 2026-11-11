@@ -219,4 +219,38 @@ describe("json-to-ts edge cases", () => {
     expect(o).toContain("e: unknown[];");
     expect(o).toMatch(/u: \(U | string\)\[\]|u: \(.*\)\[\]/);
   });
+  it("reserves the requested name for an array root and names elements separately", () => {
+    const o = jsonToTs('[{"a":{"x":1}},{"a":{"y":2}},{"a":null}]', "Root");
+    expect(o).toContain("export type Root = RootItem[];");
+    expect(o).toContain("export interface RootItem {");
+    expect(o).not.toContain("Root2");
+  });
+  it("keeps the public name for object roots", () => {
+    const o = jsonToTs('{"a":1,"root":{"b":2}}', "Root");
+    expect(o).toContain("export interface Root {");
+    expect(o).toContain("  a: number;");
+    expect(o).toContain("root: Root2;");
+  });
+  it("names nested collisions deterministically", () => {
+    const j = '[{"item":{"x":1},"RootItem":{"y":2}}]';
+    expect(jsonToTs(j, "Root")).toBe(jsonToTs(j, "Root"));
+    const o = jsonToTs(j, "Root");
+    expect(o).toBe([
+      "export type Root = RootItem[];",
+      "export interface RootItem {\n  item: Item;\n  RootItem: RootItem2;\n}",
+      "export interface RootItem2 {\n  y: number;\n}",
+      "export interface Item {\n  x: number;\n}",
+    ].join("\n\n"));
+  });
+  it("handles nested array roots, readonly and a key named like the root", () => {
+    expect(jsonToTs('[[{"a":1}]]', "Root")).toContain("export type Root = RootItem[][];");
+    const o = jsonToTs('[{"root":{"b":1}}]', "Root", false, true);
+    expect(o).toContain("type Root = RootItem[];");
+    expect(o).toContain("readonly root: Root2;");
+  });
+  it("handles primitive and empty array roots", () => {
+    expect(jsonToTs("5", "Root")).toBe("export type Root = number;");
+    expect(jsonToTs("[]", "Root")).toBe("export type Root = unknown[];");
+    expect(jsonToTs("[1,2]", "Root")).toBe("export type Root = number[];");
+  });
 });
