@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { runPipeline } from "@/engine/run";
 import { defaultParams, type BlockDef, type Params, type Recipe, type Step } from "@/engine/types";
@@ -12,8 +12,9 @@ import { ParamControls } from "./ParamControls";
  * "Take it apart" opens the same recipe, with current input and settings, in the Sandbox.
  */
 export function BlockTool({
-  recipe, blocks, inputLabel = "Input", outputLabel = "Result", outputName = "result.txt", acceptFile, inputRows = 10, renderOutput, extra,
-}: { renderOutput?: (out: string) => ReactNode; extra?: (out: string) => ReactNode; recipe: Recipe; blocks: BlockDef[]; inputLabel?: string; outputLabel?: string; outputName?: string; acceptFile?: string; inputRows?: number }) {
+  recipe, blocks, inputLabel = "Input", inputHint, outputLabel = "Result", outputName = "result.txt", acceptFile, inputRows = 10, renderOutput, extra,
+}: { renderOutput?: (out: string) => ReactNode; extra?: (out: string) => ReactNode; recipe: Recipe; blocks: BlockDef[]; inputLabel?: string; inputHint?: string; outputLabel?: string; outputName?: string; acceptFile?: string; inputRows?: number }) {
+  const hintId = useId();
   const lookup = useMemo(() => new Map(blocks.map((b) => [b.id, b])), [blocks]);
   const [input, setInput] = useState(recipe.input);
   const [steps, setSteps] = useState<Step[]>(() => recipe.steps.map((s) => ({ b: s.b, p: { ...defaultParams(lookup.get(s.b)!), ...s.p } })));
@@ -57,9 +58,10 @@ export function BlockTool({
           </div>
         </header>
         <textarea
-          className="mono text-in" rows={inputRows} spellCheck={false} aria-label={inputLabel}
+          className="mono text-in" rows={inputRows} spellCheck={false} aria-label={inputLabel} aria-describedby={inputHint ? hintId : undefined}
           value={input} onChange={(e) => setInput(e.target.value)}
         />
+        {inputHint && <p id={hintId} className="input-hint">{inputHint}</p>}
       </section>
 
       {steps.some((s) => lookup.get(s.b)!.params.length) && (
