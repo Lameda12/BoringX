@@ -186,6 +186,28 @@ describe("convert blocks", () => {
     expect(await run("timestamp", "garbage", {})).toContain("Could not read");
     await fails("timestamp", "0", { tz: "Mars/Base" }, /not a time zone/);
   });
+  it("timestamp rejects impossible calendar dates", async () => {
+    const bad = await run("timestamp", "2026-02-30", { tz: "UTC" });
+    expect(bad).toContain("2026-02-30");
+    expect(bad).toContain("is not a real date: month 02 of 2026 has 28 days");
+    expect(bad).not.toContain("2026-03-02");
+    expect(await run("timestamp", "2026-13-01", {})).toMatch(/does not exist|not a real date|invalid/i);
+    expect(await run("timestamp", "2026-04-31T10:00:00Z", {})).toContain("has 30 days");
+    expect(await run("timestamp", "2026-02-30T10:00:00+02:00", {})).toContain("has 28 days");
+    for (const l of ["Feb 30 2026", "02/30/2026", "2026/02/30", "+002026-02-30"]) expect(await run("timestamp", l, {})).toContain("Use ISO format");
+    expect(await run("timestamp", "2026-01-01T24:30:00Z", {})).toMatch(/does not exist|not a real date|invalid/i);
+    expect(await run("timestamp", "2026-01-01T10:61:00Z", {})).toMatch(/does not exist|not a real date|invalid/i);
+  });
+  it("timestamp handles leap days", async () => {
+    expect(await run("timestamp", "2024-02-29", { tz: "UTC" })).toContain("2024-02-29T00:00:00.000Z");
+    expect(await run("timestamp", "2000-02-29", { tz: "UTC" })).toContain("2000-02-29T00:00:00.000Z");
+    expect(await run("timestamp", "2026-02-29", {})).toMatch(/does not exist|not a real date|invalid/i);
+    expect(await run("timestamp", "1900-02-29", {})).toMatch(/does not exist|not a real date|invalid/i);
+    expect(await run("timestamp", "2026-01-31T23:59:59Z", { tz: "UTC" })).toContain("2026-01-31T23:59:59.000Z");
+    expect(await run("timestamp", "2026-01-31T24:00:00Z", { tz: "UTC" })).toContain("2026-02-01T00:00:00.000Z");
+    expect(await run("timestamp", "2026-01-31 09:30:00.5+02:00", { tz: "UTC" })).toContain("2026-01-31T07:30:00.500Z");
+    expect(await run("timestamp", "2026-01-31t09:30:00z", { tz: "UTC" })).toContain("2026-01-31T09:30:00.000Z");
+  });
   it("timezone (with DST)", async () => {
     const o = await run("timezone", "2026-03-08 09:00", { from: "America/Halifax", to: "UTC, Asia/Tokyo" });
     expect(o).toMatch(/UTC\s+2026-03-08 12:00:00/); // DST began 2:00 that morning, so Halifax is UTC-3

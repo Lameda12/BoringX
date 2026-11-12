@@ -162,6 +162,11 @@ test("Generate: uuid, password, qr, filler, placeholder", async ({ page }) => {
 test("Convert: timestamp, time zone, units, color, base", async ({ page }) => {
   await page.goto("/unix-timestamp");
   await expect(out(page)).toContainText("2023-11-14T22:13:20.000Z");
+  await expect(page.getByText(/Supported: epoch seconds or milliseconds/)).toBeVisible();
+  await page.getByLabel("Timestamps or dates, one per line").fill("2026-02-30\n2024-02-29");
+  await expect(out(page)).toContainText("is not a real date");
+  await expect(out(page)).not.toContainText("2026-03-02");
+  await expect(out(page)).toContainText("2024-02-29T00:00:00.000Z");
   await page.goto("/time-zone");
   await expect(out(page)).toContainText("Asia/Tokyo");
   await page.goto("/units");

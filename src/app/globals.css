@@ -188,3 +188,5 @@ code { background: var(--sheet); padding: 0 4px; font-size: .92em; }
   .hero-h { gap: 6px; }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+
+.input-hint { margin: 6px 0 0; font-size: 14px; color: var(--muted); }
