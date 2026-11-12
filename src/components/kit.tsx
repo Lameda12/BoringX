@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { copyText } from "@/lib/clipboard";
+import { resultStatus } from "@/lib/status";
 import { download as dl, fmtBytes } from "@/lib/util";
 
 export function Btn(props: React.ButtonHTMLAttributes<HTMLButtonElement> & { primary?: boolean }) {
@@ -21,6 +22,20 @@ export function Field({ label, children, help, className = "" }: { label: string
 export function ErrorNote({ error }: { error?: string | null }) {
   if (!error) return null;
   return <p role="alert" className="note-error">{error}</p>;
+}
+
+/**
+ * Announced result status, kept separate from the result body so a long document is never
+ * read out. Debounced, so typing through several inputs produces one announcement.
+ */
+export function ResultStatus({ output, error, delay = 500 }: { output: string; error?: string | null; delay?: number }) {
+  const message = resultStatus({ output, error });
+  const [live, setLive] = useState("");
+  useEffect(() => {
+    const t = setTimeout(() => setLive(message), delay);
+    return () => clearTimeout(t);
+  }, [message, delay]);
+  return <p className="sr-only" role="status">{live}</p>;
 }
 
 export function Progress({ value, label }: { value: number | null; label?: string }) {

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { runPipeline } from "@/engine/run";
 import { defaultParams, type BlockDef, type Params, type Recipe, type Step } from "@/engine/types";
 import { encodeRecipe } from "@/engine/recipe";
-import { CopyBtn, DownloadBtn, ErrorNote, FileDrop } from "./kit";
+import { CopyBtn, DownloadBtn, ErrorNote, FileDrop, ResultStatus } from "./kit";
 import { ParamControls } from "./ParamControls";
 
 /**
@@ -90,7 +90,8 @@ export function BlockTool({
         </header>
         <ErrorNote error={error} />
         {renderOutput && !error && output ? <div className="rendered" data-testid="rendered">{renderOutput(output)}</div> : null}
-        <pre className={`mono text-out ${renderOutput && output ? "sr-only" : ""}`} data-testid="output" aria-live="polite" tabIndex={0}>{output}</pre>
+        <pre className={`mono text-out ${renderOutput && output ? "sr-only" : ""}`} data-testid="output" tabIndex={0}>{output}</pre>
+        <ResultStatus output={output} error={error} />
         <p className="meter">{ms !== null ? `${ms < 1 ? "<1" : Math.round(ms)} ms` : ""}</p>
       </section>
     </div>

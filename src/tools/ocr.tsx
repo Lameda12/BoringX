@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import type { ToolMeta } from "@/engine/types";
-import { Btn, CopyBtn, DownloadBtn, ErrorNote, FileDrop, Panel, Progress, useJob, useObjectUrl } from "@/components/kit";
+import { Btn, CopyBtn, DownloadBtn, ErrorNote, FileDrop, Panel, Progress, ResultStatus, useJob, useObjectUrl } from "@/components/kit";
 import { sampleTextImage } from "@/lib/samples";
 
 export const meta: ToolMeta = {
@@ -41,7 +41,8 @@ export default function Tool() {
         <ErrorNote error={job.error} />
         {job.busy && <p className="help" aria-live="polite">{stage}</p>}
         <Progress value={job.progress} label="Recognising" />
-        <pre className="mono text-out" data-testid="output" aria-live="polite">{text}</pre>
+        <pre className="mono text-out" data-testid="output">{text}</pre>
+        <ResultStatus output={text} error={job.error} />
         {conf !== null && <p className="meter">Confidence {conf}%</p>}
       </Panel>
     </div>
