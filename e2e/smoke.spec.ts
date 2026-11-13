@@ -173,6 +173,20 @@ test("Convert: timestamp, time zone, units, color, base", async ({ page }) => {
   await expect(out(page)).toContainText("hex  ff");
 });
 
+test("Time zone: DST gap is reported, repeated hour offers both, policy survives a sandbox link", async ({ page }) => {
+  await page.goto("/time-zone");
+  const input = page.getByLabel("Date and time in the source zone");
+  await input.fill("2026-03-08 02:30\n2026-11-01 01:30");
+  await expect(out(page)).toContainText("Nonexistent local time");
+  await expect(out(page)).toContainText("ambiguous");
+  await expect(out(page)).toContainText("UTC-03:00");
+  await expect(out(page)).toContainText("UTC-04:00");
+  const r = { name: "", input: "2026-11-01 01:30", steps: [{ b: "timezone", p: { from: "America/Halifax", to: "UTC", ambiguous: "later" } }] };
+  await page.goto("/sandbox#r=p." + Buffer.from(JSON.stringify(r)).toString("base64url"));
+  await expect(out(page)).toContainText("2026-11-01 05:30:00");
+  await expect(out(page)).not.toContainText("04:30:00");
+});
+
 test("Files: checksum, zip, svg to png, favicon", async ({ page }) => {
   await page.goto("/file-checksum");
   const want = crypto.createHash("sha256").update("Nothing exciting happens here.\n").digest("hex");

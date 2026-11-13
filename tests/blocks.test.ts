@@ -193,6 +193,49 @@ describe("convert blocks", () => {
     expect(await run("timezone", "2026-03-07 09:00", { from: "America/Halifax", to: "UTC" })).toMatch(/2026-03-07 13:00:00/); // day before DST: UTC-4
     await fails("timezone", "x", { from: "Nope/Zone" }, /not a time zone/);
   });
+  it("timezone reports nonexistent local times in the spring gap", async () => {
+    const o = await run("timezone", "2026-03-08 02:30", { from: "America/Halifax", to: "UTC" });
+    expect(o).toMatch(/Nonexistent local time/);
+    expect(o).not.toMatch(/UTC\s+2026-03-08 \d\d:/);
+    expect(await run("timezone", "2026-03-08 01:59", { from: "America/Halifax", to: "UTC" })).toMatch(/UTC\s+2026-03-08 05:59:00/);
+    expect(await run("timezone", "2026-03-08 03:00", { from: "America/Halifax", to: "UTC" })).toMatch(/UTC\s+2026-03-08 06:00:00/);
+    expect(await run("timezone", "2026-03-08 02:30", { from: "UTC", to: "UTC" })).toMatch(/UTC\s+2026-03-08 02:30:00/);
+  });
+  it("timezone exposes both offsets for the repeated autumn hour", async () => {
+    const o = await run("timezone", "2026-11-01 01:30", { from: "America/Halifax", to: "UTC" });
+    expect(o).toMatch(/ambiguous/);
+    expect(o).toMatch(/Earlier \(UTC-03:00\)\s+UTC\s+2026-11-01 04:30:00/);
+    expect(o).toMatch(/Later \(UTC-04:00\)\s+UTC\s+2026-11-01 05:30:00/);
+    const e = await run("timezone", "2026-11-01 01:30", { from: "America/Halifax", to: "UTC", ambiguous: "earlier" });
+    expect(e).toMatch(/UTC\s+2026-11-01 04:30:00/);
+    expect(e).not.toMatch(/05:30/);
+    const l = await run("timezone", "2026-11-01 01:30", { from: "America/Halifax", to: "UTC", ambiguous: "later" });
+    expect(l).toMatch(/UTC\s+2026-11-01 05:30:00/);
+    expect(l).not.toMatch(/04:30/);
+    expect(await run("timezone", "2026-11-01 00:59", { from: "America/Halifax", to: "UTC" })).not.toMatch(/ambiguous/);
+    expect(await run("timezone", "2026-11-01 02:00", { from: "America/Halifax", to: "UTC" })).toMatch(/UTC\s+2026-11-01 06:00:00/);
+  });
+  it("timezone date-only input still converts when midnight is skipped", async () => {
+    const o = await run("timezone", "2018-11-04", { from: "America/Sao_Paulo", to: "UTC" });
+    expect(o).not.toMatch(/Nonexistent/);
+    expect(o).toMatch(/UTC\s+2018-11-04 03:00:00/);
+    expect(await run("timezone", "2018-11-04 00:30", { from: "America/Sao_Paulo", to: "UTC" })).toMatch(/Nonexistent/);
+  });
+  it("timezone handles half-hour DST zones and mixed lines", async () => {
+    // Lord Howe: 30 minute shift, gap 02:00-02:30 on 2026-10-04, overlap 01:30-02:00 on 2026-04-05
+    expect(await run("timezone", "2026-10-04 02:15", { from: "Australia/Lord_Howe", to: "UTC" })).toMatch(/Nonexistent/);
+    expect(await run("timezone", "2026-04-05 01:45", { from: "Australia/Lord_Howe", to: "UTC" })).toMatch(/ambiguous/);
+    const o = await run("timezone", "2026-03-08 02:30\n2026-07-01 12:00", { from: "America/Halifax", to: "UTC" });
+    expect(o).toMatch(/Nonexistent/);
+    expect(o).toMatch(/UTC\s+2026-07-01 15:00:00/);
+  });
+  it("timezone ambiguity policy survives sandbox share links", async () => {
+    const { encodeRecipe, decodeRecipe } = await import("@/engine/recipe");
+    const r = { name: "t", input: "2026-11-01 01:30", steps: [{ b: "timezone", p: { from: "America/Halifax", to: "UTC", ambiguous: "later" } }] };
+    const back = await decodeRecipe(await encodeRecipe(r));
+    expect(back.steps[0].p.ambiguous).toBe("later");
+    expect(await run("timezone", back.input, back.steps[0].p)).toMatch(/UTC\s+2026-11-01 05:30:00/);
+  });
   it("units", async () => {
     expect(await run("units", "10 km to mi")).toBe("10 km = 6.21371 mi");
     expect(await run("units", "212 f to c")).toBe("212 f = 100 c");
