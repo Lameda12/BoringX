@@ -9,7 +9,8 @@ test.describe("home", () => {
   test("filters tools as you type and offers to build when nothing matches", async ({ page }) => {
     await page.goto("/");
     await expect(page.getByRole("heading", { level: 1 })).toContainText("Boring");
-    await expect(page.locator("a.tool-row")).toHaveCount(41); // 40 tools + sandbox
+    await expect(page.locator("a.tool-row")).toHaveCount(40); // the Sandbox is now the hero action, not a list row
+    await expect(page.getByRole("link", { name: "Open the Sandbox" })).toBeVisible();
     await page.locator("#hero-q").fill("pdf");
     await expect(page.locator("a.tool-row")).toHaveCount(5);
     await page.locator("#hero-q").fill("zzqx wibble");
@@ -21,6 +22,7 @@ test.describe("home", () => {
   });
   test("slash focuses search and cmd+K opens the palette", async ({ page }) => {
     await page.goto("/");
+    await page.waitForLoadState("networkidle"); // key handlers attach on hydration
     await page.keyboard.press("/");
     await expect(page.locator("#hero-q")).toBeFocused();
     await page.locator("body").click({ position: { x: 5, y: 5 } });

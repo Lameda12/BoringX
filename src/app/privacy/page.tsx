@@ -4,7 +4,7 @@ export const metadata: Metadata = { title: "Privacy", description: "Your files n
 
 export default function Privacy() {
   return (
-    <article className="prose">
+    <article className="prose narrow">
       <h1 className="tool-h">Privacy</h1>
       <p><strong>Nothing you give a tool is uploaded.</strong> Files, text and images are processed by JavaScript and WebAssembly running in your browser tab. There is no server that receives them, and there is no database to store them.</p>
       <h2 className="cat-h">Why you can believe that</h2>

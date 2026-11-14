@@ -28,7 +28,7 @@ export function Progress({ value, label }: { value: number | null; label?: strin
   const pct = Math.round(Math.min(1, Math.max(0, value)) * 100);
   return (
     <div className="progress" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label={label ?? "Progress"}>
-      <div className="progress-bar" style={{ width: `${pct}%` }} />
+      <div className="progress-bar" style={{ transform: `scaleX(${pct / 100})` }} />
       <span className="progress-text">{label ? `${label} ` : ""}{pct}%</span>
     </div>
   );

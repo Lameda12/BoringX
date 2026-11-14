@@ -25,7 +25,7 @@ export default async function ToolPage({ params }: { params: Promise<{ slug: str
   if (!t) notFound();
   const related = tools.filter((x) => x.category === t.category && x.slug !== t.slug).slice(0, 5);
   return (
-    <article>
+    <article className="narrow">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({ "@context": "https://schema.org", "@type": "SoftwareApplication", name: t.name, applicationCategory: "UtilitiesApplication", operatingSystem: "Any", description: t.description, url: `${SITE.url}/${t.slug}`, offers: { "@type": "Offer", price: "0", priceCurrency: "USD" } }) }} />
       <nav aria-label="Breadcrumb" className="crumb"><Link href="/">All tools</Link> / {t.category}</nav>
       <h1 className="tool-h"><span className="boring">Boring</span> {t.name}</h1>

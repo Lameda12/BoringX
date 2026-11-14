@@ -10,10 +10,10 @@ export const metadata: Metadata = {
 
 export default function Page() {
   return (
-    <>
+    <div className="narrow">
       <h1 className="tool-h"><span className="boring">Boring</span> Sandbox</h1>
       <p className="lede">Input, a stack of blocks, output. It reruns on every change. Name it, save it, or share it as a link.</p>
       <Sandbox />
-    </>
+    </div>
   );
 }

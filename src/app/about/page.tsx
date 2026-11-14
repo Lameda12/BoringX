@@ -6,7 +6,7 @@ export const metadata: Metadata = { title: "About", description: "What BoringX i
 
 export default function About() {
   return (
-    <article className="prose">
+    <article className="prose narrow">
       <h1 className="tool-h">About</h1>
       <p>BoringX is {tools.length} small tools that each do one dull job: merge a PDF, format some JSON, strip the location from a photo. Everything runs in your browser. There is no server doing the work.</p>
       <h2 className="cat-h">What it is not</h2>

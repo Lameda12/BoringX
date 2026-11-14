@@ -122,7 +122,7 @@ export function Sandbox() {
                   <span className="step-actions">
                     <Btn aria-label={`Move ${d.name} up`} disabled={i === 0} onClick={() => move(i, i - 1)}>Up</Btn>
                     <Btn aria-label={`Move ${d.name} down`} disabled={i === steps.length - 1} onClick={() => move(i, i + 1)}>Down</Btn>
-                    <Btn aria-label={`Show output after ${d.name}`} onClick={() => setPeek(peek === i ? null : i)}>{peek === i ? "Hide" : "Peek"}</Btn>
+                    <Btn aria-label={`${peek === i ? "Hide" : "Peek at"} output after ${d.name}`} onClick={() => setPeek(peek === i ? null : i)}>{peek === i ? "Hide" : "Peek"}</Btn>
                     <Btn aria-label={`Remove ${d.name}`} onClick={() => { setSteps(steps.filter((_, k) => k !== i)); setPeek(null); }}>Remove</Btn>
                   </span>
                 </div>
