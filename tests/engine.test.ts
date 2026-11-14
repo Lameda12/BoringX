@@ -12,6 +12,7 @@ import { md5 } from "@/lib/md5";
 import { stripImage, stripJpeg, readExif } from "@/lib/exif";
 import { buildIco } from "@/tools/favicon-generator";
 import { jsonToTs } from "@/tools/json-to-typescript";
+import { convertCase } from "@/tools/case-converter";
 
 describe("pipeline", () => {
   it("runs steps in order and passes output along", async () => {
@@ -218,5 +219,36 @@ describe("json-to-ts edge cases", () => {
     expect(o).toContain('"a-b": number;');
     expect(o).toContain("e: unknown[];");
     expect(o).toMatch(/u: \(U | string\)\[\]|u: \(.*\)\[\]/);
+  });
+});
+
+describe("case converter identifier boundaries", () => {
+  it("splits acronym boundaries", () => {
+    expect(convertCase("XMLHttpRequest", "snake")).toBe("xml_http_request");
+    expect(convertCase("XMLHttpRequest", "kebab")).toBe("xml-http-request");
+    expect(convertCase("XMLHttpRequest", "camel")).toBe("xmlHttpRequest");
+    expect(convertCase("XMLHttpRequest", "pascal")).toBe("XmlHttpRequest");
+    expect(convertCase("XMLHttpRequest", "constant")).toBe("XML_HTTP_REQUEST");
+    expect(convertCase("parseHTMLString", "snake")).toBe("parse_html_string");
+  });
+  it("keeps existing behavior", () => {
+    expect(convertCase("helloWorld", "snake")).toBe("hello_world");
+    expect(convertCase("HTML", "snake")).toBe("html");
+    expect(convertCase("userID", "snake")).toBe("user_id");
+    expect(convertCase("version2Beta", "snake")).toBe("version2_beta");
+  });
+  it("leaves non-Latin text intact", () => {
+    expect(convertCase("Қазақ тілі", "snake")).toBe("қазақ_тілі");
+    expect(convertCase("Қазақ тілі", "kebab")).toBe("қазақ-тілі");
+    expect(convertCase("helloМир", "snake")).toBe("hello_мир");
+    expect(convertCase("ҚазақТілі", "snake")).toBe("қазақ_тілі");
+    expect(convertCase("Қазақ тілі", "camel")).toBe("қазақТілі");
+    expect(convertCase("Қазақ тілі", "pascal")).toBe("ҚазақТілі");
+    expect(convertCase("Қазақ тілі", "constant")).toBe("ҚАЗАҚ_ТІЛІ");
+    expect(convertCase("Қазақ тілі", "upper")).toBe("ҚАЗАҚ ТІЛІ");
+  });
+  it("handles digits next to acronyms", () => {
+    expect(convertCase("HTTP2Server", "snake")).toBe("http2_server");
+    expect(convertCase("getHTTP2Response", "snake")).toBe("get_http2_response");
   });
 });

@@ -11,7 +11,7 @@ export const meta: ToolMeta = {
 };
 
 const words = (s: string) =>
-  s.replace(/([a-z0-9])([A-Z])/g, "$1 $2").replace(/[_\-.]+/g, " ").trim().split(/\s+/).filter(Boolean);
+  s.replace(/([\p{Ll}\p{Nd}])(\p{Lu})/gu, "$1 $2").replace(/(\p{Lu})(\p{Lu}\p{Ll})/gu, "$1 $2").replace(/[_\-.]+/g, " ").trim().split(/\s+/).filter(Boolean);
 const cap = (w: string) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase();
 
 export function convertCase(s: string, mode: string): string {
