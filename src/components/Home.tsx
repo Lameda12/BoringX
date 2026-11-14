@@ -8,30 +8,14 @@ export function Home() {
   const results = useMemo(() => (q.trim() ? tools.map((t) => ({ t, s: score(t, q) })).filter((x) => x.s > 0).sort((a, b) => b.s - a.s).map((x) => x.t) : null), [q]);
   return (
     <>
-      <section className="hero" aria-label="Find a tool">
-        <div className="hero-text">
-          <h1 className="hero-h">
-            <label htmlFor="hero-q"><span className="boring">Boring</span></label>
-            <input id="hero-q" className="hero-in" autoComplete="off" spellCheck={false} placeholder="PDF, JSON, QR" value={q} onChange={(e) => setQ(e.target.value)} aria-describedby="hero-help" />
-          </h1>
-          <p className="lead">{tools.length} small tools that each do one dull job, in your browser.</p>
-          <p id="hero-help" className="sr-only">Type to filter the tools. Press slash to search from any page.</p>
-          <div className="row"><Link href="/sandbox" className="btn btn-primary" style={{ minHeight: 48 }}>Open the Sandbox</Link></div>
-        </div>
-        <aside className="hero-panel" aria-label="A Sandbox recipe">
-          <header>Sandbox recipe</header>
-          <pre>{`input    banana, apple, Banana,
-         cherry, apple, date
-`}<span className="tk">1 Clean list</span>{`     dedupe, A to Z
-`}<span className="tk">2 Change case</span>{`    UPPER CASE
-`}<span className="tk">3 SQL IN list</span>{`    column: fruit
-`}<span className="mut">output</span>{`   fruit IN ('APPLE', 'BANANA',
-         'CHERRY', 'DATE')`}</pre>
-        </aside>
+      <section className="hero">
+        <h1 className="hero-h"><label htmlFor="hero-q"><span className="boring">Boring</span></label>
+          <input id="hero-q" className="hero-in mono" autoComplete="off" spellCheck={false} placeholder="PDF, JSON, QR, case…" value={q} onChange={(e) => setQ(e.target.value)} aria-describedby="hero-help" />
+        </h1>
+        <p id="hero-help" className="help">Type what you need done. {tools.length} tools, each does one dull job. Press <kbd>/</kbd> to search from anywhere.</p>
       </section>
-
       {results ? (
-        <section aria-live="polite" aria-label="Search results" className="results">
+        <section aria-live="polite" aria-label="Search results">
           {results.length ? (
             <ul className="ledger">{results.map((t) => <ToolRow key={t.slug} t={t} />)}</ul>
           ) : (
@@ -43,15 +27,15 @@ export function Home() {
           )}
         </section>
       ) : (
-        byCategory().map(({ category, tools: list }) => (
-          <section key={category} className="cat-row" aria-labelledby={`c-${category}`}>
-            <div>
-              <h2 id={`c-${category}`} className="cat-name">{category}</h2>
-              <p className="cat-count">{list.length} tools</p>
-            </div>
-            <ul className="ledger">{list.map((t) => <ToolRow key={t.slug} t={t} />)}</ul>
-          </section>
-        ))
+        <>
+          <ul className="ledger lead"><li><Link href="/sandbox" className="ledger-row tool-row"><span className="tool-name">Sandbox</span><span className="tool-blurb">Chain blocks into your own tool. Save it, or share it as a link.</span><span className="tag">Build</span></Link></li></ul>
+          {byCategory().map(({ category, tools: list }) => (
+            <section key={category} aria-labelledby={`c-${category}`}>
+              <h2 id={`c-${category}`} className="cat-h">{category}</h2>
+              <ul className="ledger">{list.map((t) => <ToolRow key={t.slug} t={t} />)}</ul>
+            </section>
+          ))}
+        </>
       )}
     </>
   );
@@ -59,6 +43,6 @@ export function Home() {
 
 function ToolRow({ t }: { t: (typeof tools)[number] }) {
   return (
-    <li><Link href={`/${t.slug}`} className="ledger-row tool-row"><span className="tool-name">{t.name}</span><span className="tool-blurb">{t.blurb}</span></Link></li>
+    <li><Link href={`/${t.slug}`} className="ledger-row tool-row"><span className="tool-name">{t.name}</span><span className="tool-blurb">{t.blurb}</span><span className="tag">{t.category}</span></Link></li>
   );
 }
