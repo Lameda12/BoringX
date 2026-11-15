@@ -32,10 +32,10 @@ const url = (svg: string) => `data:image/svg+xml;utf8,${encodeURIComponent(svg)}
 export default toolFromRecipe(meta.recipe!, blocks, {
   inputLabel: "Label (blank shows size)", inputRows: 1, outputLabel: "Image", outputName: "placeholder.svg",
   renderOutput: (svg) => <img className="preview-img" alt="Placeholder" src={url(svg)} />,
-  extra: (svg) => svg ? <AsyncDownloadBtn label="PNG" name="placeholder.png" make={async () => {
+  extra: (svg, ok) => <AsyncDownloadBtn disabled={!ok} label="PNG" name="placeholder.png" make={async () => {
     const img = await loadImage(url(svg));
     const c = document.createElement("canvas"); c.width = img.naturalWidth || 800; c.height = img.naturalHeight || 450;
     c.getContext("2d")!.drawImage(img, 0, 0, c.width, c.height);
     return canvasToBlob(c, "image/png");
-  }} /> : null,
+  }} />,
 });

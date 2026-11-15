@@ -6,6 +6,7 @@ import { decodeRecipe, encodeRecipe } from "@/engine/recipe";
 import { defaultParams, CATEGORIES, type Params, type Recipe } from "@/engine/types";
 import { Btn, CopyBtn, DownloadBtn, ErrorNote } from "./kit";
 import { ParamControls } from "./ParamControls";
+import { canUseOutput } from "@/lib/output";
 import { copyText } from "@/lib/clipboard";
 
 type UStep = { uid: string; b: string; p: Params };
@@ -36,7 +37,9 @@ export function Sandbox() {
   const [withInput, setWithInput] = useState(true);
   const [link, setLink] = useState("");
   const [dragFrom, setDragFrom] = useState<number | null>(null);
+  const [pending, setPending] = useState(true);
   const seq = useRef(0);
+  const canExport = canUseOutput({ output, error, pending });
 
   const apply = useCallback((r: Recipe) => {
     setName(r.name); setInput(r.input);
@@ -60,9 +63,10 @@ export function Sandbox() {
 
   useEffect(() => {
     const id = ++seq.current;
+    setPending(true);
     runPipeline(input, steps.map((s) => ({ b: s.b, p: s.p })), blockById).then((r) => {
       if (id !== seq.current) return;
-      setResults(r.results); setOutput(r.error ? "" : r.output); setError(r.error ?? null);
+      setResults(r.results); setOutput(r.error ? "" : r.output); setError(r.error ?? null); setPending(false);
     });
   }, [input, steps]);
 
@@ -153,7 +157,7 @@ export function Sandbox() {
       </section>
 
       <section className="panel">
-        <header className="panel-head"><h2>Output</h2><div className="panel-actions"><CopyBtn text={output} /><DownloadBtn data={output} name={isSvg ? "output.svg" : "output.txt"} type={isSvg ? "image/svg+xml" : "text/plain"} /></div></header>
+        <header className="panel-head"><h2>Output</h2><div className="panel-actions"><CopyBtn text={output} disabled={!canExport} /><DownloadBtn disabled={!canExport} data={output} name={isSvg ? "output.svg" : "output.txt"} type={isSvg ? "image/svg+xml" : "text/plain"} /></div></header>
         <ErrorNote error={error ? `Block ${error.index + 1} (${blockById(steps[error.index]?.b)?.name ?? "?"}): ${error.message}` : null} />
         {isSvg && !error && /* eslint-disable-next-line @next/next/no-img-element */ <img className="preview-img" alt="SVG output" src={`data:image/svg+xml;utf8,${encodeURIComponent(output)}`} />}
         <pre className="mono text-out" data-testid="output" aria-live="polite" tabIndex={0}>{output}</pre>
