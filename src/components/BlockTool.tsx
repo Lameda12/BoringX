@@ -4,6 +4,7 @@ import Link from "next/link";
 import { runPipeline } from "@/engine/run";
 import { defaultParams, type BlockDef, type Params, type Recipe, type Step } from "@/engine/types";
 import { encodeRecipe } from "@/engine/recipe";
+import { canUseOutput } from "@/lib/output";
 import { CopyBtn, DownloadBtn, ErrorNote, FileDrop } from "./kit";
 import { ParamControls } from "./ParamControls";
 
@@ -13,7 +14,7 @@ import { ParamControls } from "./ParamControls";
  */
 export function BlockTool({
   recipe, blocks, inputLabel = "Input", outputLabel = "Result", outputName = "result.txt", acceptFile, inputRows = 10, renderOutput, extra,
-}: { renderOutput?: (out: string) => ReactNode; extra?: (out: string) => ReactNode; recipe: Recipe; blocks: BlockDef[]; inputLabel?: string; outputLabel?: string; outputName?: string; acceptFile?: string; inputRows?: number }) {
+}: { renderOutput?: (out: string) => ReactNode; extra?: (out: string, canExport: boolean) => ReactNode; recipe: Recipe; blocks: BlockDef[]; inputLabel?: string; outputLabel?: string; outputName?: string; acceptFile?: string; inputRows?: number }) {
   const lookup = useMemo(() => new Map(blocks.map((b) => [b.id, b])), [blocks]);
   const [input, setInput] = useState(recipe.input);
   const [steps, setSteps] = useState<Step[]>(() => recipe.steps.map((s) => ({ b: s.b, p: { ...defaultParams(lookup.get(s.b)!), ...s.p } })));
@@ -21,16 +22,20 @@ export function BlockTool({
   const [error, setError] = useState<string | null>(null);
   const [ms, setMs] = useState<number | null>(null);
   const [href, setHref] = useState("/sandbox");
+  const [pending, setPending] = useState(true);
   const seq = useRef(0);
+  const canExport = canUseOutput({ output, error, pending });
 
   useEffect(() => {
     const id = ++seq.current;
     const t0 = performance.now();
+    setPending(true);
     runPipeline(input, steps, (b) => lookup.get(b)).then((r) => {
       if (id !== seq.current) return;
       setOutput(r.error ? "" : r.output);
       setError(r.error?.message ?? null);
       setMs(performance.now() - t0);
+      setPending(false);
     });
   }, [input, steps, lookup]);
 
@@ -82,9 +87,9 @@ export function BlockTool({
         <header className="panel-head">
           <h2>{outputLabel}</h2>
           <div className="panel-actions">
-            <CopyBtn text={output} />
-            <DownloadBtn data={output} name={outputName} type="text/plain" />
-            {extra?.(output)}
+            <CopyBtn text={output} disabled={!canExport} />
+            <DownloadBtn data={output} name={outputName} type="text/plain" disabled={!canExport} />
+            {extra?.(output, canExport)}
             <Link className="btn" href={href} prefetch={false}>Take it apart</Link>
           </div>
         </header>

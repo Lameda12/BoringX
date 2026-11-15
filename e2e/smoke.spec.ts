@@ -316,3 +316,44 @@ test("PWA: manifest, service worker and offline reload", async ({ page, context 
   await expect(page.getByTestId("output")).toHaveText(/[0-9a-f-]{36}/);
   await context.setOffline(false);
 });
+
+test("failed output cannot overwrite the clipboard or be downloaded", async ({ page, context }) => {
+  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+  await page.goto("/placeholder-image");
+  const copy = page.getByRole("button", { name: "Copy", exact: true });
+  const download = page.getByRole("button", { name: "Download", exact: true });
+  await expect(copy).toBeEnabled();
+  await expect(download).toBeEnabled();
+  await page.evaluate(() => navigator.clipboard.writeText("keep me"));
+  await page.getByLabel("Width").fill("-1");
+  await expect(page.locator(".note-error")).toBeVisible();
+  await expect(copy).toBeDisabled();
+  await expect(download).toBeDisabled();
+  await expect(page.getByRole("button", { name: "PNG" })).toBeDisabled();
+  await copy.evaluate((b: HTMLButtonElement) => b.click()); // bypasses Playwright checks; the browser must still not fire it
+  await download.evaluate((b: HTMLButtonElement) => b.click());
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe("keep me");
+  await page.getByLabel("Width").fill("300");
+  await expect(copy).toBeEnabled();
+  await expect(download).toBeEnabled();
+  await expect(page.getByRole("button", { name: "PNG" })).toBeEnabled();
+  await copy.click();
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toContain("<svg");
+});
+
+test("Sandbox output actions follow the result state", async ({ page }) => {
+  await page.goto("/sandbox");
+  const copy = page.getByRole("button", { name: "Copy", exact: true });
+  const download = page.getByRole("button", { name: "Download", exact: true });
+  await expect(copy).toBeEnabled();
+  await expect(download).toBeEnabled();
+  await page.getByRole("button", { name: "Remove SQL IN list" }).click();
+  await page.getByText("Add a block").click();
+  await page.getByRole("button", { name: /JSON to TypeScript/ }).click();
+  await expect(alert(page).first()).toContainText(/Invalid JSON/);
+  await expect(copy).toBeDisabled();
+  await expect(download).toBeDisabled();
+  await page.getByLabel("Input", { exact: true }).fill('{"a":1}');
+  await expect(copy).toBeEnabled();
+  await expect(download).toBeEnabled();
+});

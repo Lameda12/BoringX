@@ -34,5 +34,5 @@ async function svgToPng(svg: string, size = 1024) {
 export default toolFromRecipe(meta.recipe!, blocks, {
   inputLabel: "Text or URL", outputLabel: "QR code", outputName: "qr.svg", inputRows: 3,
   renderOutput: (svg) => <img className="qr" alt="QR code" width={240} height={240} src={svgUrl(svg)} />,
-  extra: (svg) => svg ? <AsyncDownloadBtn label="PNG" name="qr.png" make={() => svgToPng(svg)} /> : null,
+  extra: (svg, ok) => <AsyncDownloadBtn disabled={!ok} label="PNG" name="qr.png" make={() => svgToPng(svg)} />,
 });
