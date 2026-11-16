@@ -316,3 +316,44 @@ test("PWA: manifest, service worker and offline reload", async ({ page, context 
   await expect(page.getByTestId("output")).toHaveText(/[0-9a-f-]{36}/);
   await context.setOffline(false);
 });
+
+test.describe("password: Generate again", () => {
+  test("makes a new batch with unchanged settings and keeps keyboard focus", async ({ page }) => {
+    await page.goto("/password");
+    await expect(out(page)).toHaveText(/\S/); // wait for hydration before editing controlled inputs
+    await page.getByLabel("Length").fill("24");
+    await page.getByLabel("How many").fill("4");
+    await expect(out(page)).toHaveText(/^(\S{24}\n){3}\S{24}$/);
+    const first = await out(page).textContent();
+    const btn = page.getByRole("button", { name: "Generate again" });
+    await btn.focus();
+    await page.keyboard.press("Enter");
+    await expect.poll(() => out(page).textContent()).not.toBe(first);
+    await expect(out(page)).toHaveText(/^(\S{24}\n){3}\S{24}$/);
+    await expect(btn).toBeFocused();
+    const second = await out(page).textContent();
+    await page.keyboard.press("Space");
+    await expect.poll(() => out(page).textContent()).not.toBe(second);
+    await expect(btn).toBeFocused();
+    await expect(page.getByLabel("Length")).toHaveValue("24");
+    await expect(page.getByLabel("How many")).toHaveValue("4");
+  });
+
+  test("does not generate while settings are invalid", async ({ page }) => {
+    await page.goto("/password");
+    await expect(out(page)).toHaveText(/\S/);
+    for (const l of ["a-z", "A-Z", "0-9", "Symbols"]) await page.getByLabel(l, { exact: true }).uncheck();
+    await expect(alert(page)).toContainText("Select at least one character type");
+    const btn = page.getByRole("button", { name: "Generate again" });
+    await expect(btn).toHaveAttribute("aria-disabled", "true");
+    await btn.click({ force: true });
+    await btn.focus();
+    await page.keyboard.press("Enter");
+    await expect(out(page)).toHaveText("");
+    await expect(alert(page)).toContainText("Select at least one character type");
+    await expect(btn).toBeFocused();
+    await page.getByLabel("a-z", { exact: true }).check();
+    await expect(btn).not.toHaveAttribute("aria-disabled", "true");
+    await expect(out(page)).toHaveText(/^(\S{20}\n){2}\S{20}$/);
+  });
+});
