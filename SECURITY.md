@@ -25,4 +25,8 @@ Out of scope: findings that need a compromised browser or device, denial of serv
 
 ## Known dependency advisories
 
-`xlsx` (SheetJS) has open advisories with no fixed version on npm. It is used only to read spreadsheets that the visitor chooses to open in their own browser tab. `@imgly/background-removal` pulls in `lodash` and `zod` versions with advisories; these are being tracked.
+Checked with `npm audit` on 2026-11-17.
+
+- **Fixed:** `xlsx` (SheetJS prototype pollution and ReDoS) is now version 0.20.3, installed under the name `xlsx` from the `@e965/xlsx` npm mirror of the official SheetJS releases, because SheetJS no longer publishes to npm. `lodash` is overridden to 4.18.1.
+- **Open, not reachable:** `@imgly/background-removal` (pinned to 1.4.5 to match its model data) depends on `zod` 3, which has an advisory about validating oversized collections (GHSA-mrhx-c7xc-m3w5). Only zod 4.6.6 and later fix it, and this library needs the zod 3 API. It validates its own fixed configuration object, never data from the visitor or a file.
+- **Open, development only:** `picomatch` (ReDoS) through `vitest` and `vite`. No patched version exists, and none of it ships to visitors.
