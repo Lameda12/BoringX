@@ -36,4 +36,4 @@ export const blocks: BlockDef[] = [{
     makePassword(Math.min(128, Number(p.length)), { lower: !!p.lower, upper: !!p.upper, digits: !!p.digits, symbols: !!p.symbols, ambiguous: !!p.ambiguous })).join("\n"),
 }];
 
-export default toolFromRecipe(meta.recipe!, blocks, { inputLabel: "Input (ignored)", inputRows: 1, outputLabel: "Passwords", outputName: "passwords.txt" });
+export default toolFromRecipe(meta.recipe!, blocks, { hideInput: true, outputLabel: "Passwords", outputName: "passwords.txt" });
