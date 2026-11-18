@@ -33,7 +33,7 @@ export function Sandbox() {
   const [peek, setPeek] = useState<number | null>(null);
   const [saved, setSaved] = useState<Saved[]>([]);
   const [filter, setFilter] = useState("");
-  const [withInput, setWithInput] = useState(true);
+  const [withInput, setWithInput] = useState(false);
   const [link, setLink] = useState("");
   const [dragFrom, setDragFrom] = useState<number | null>(null);
   const seq = useRef(0);
@@ -91,9 +91,14 @@ export function Sandbox() {
         </div>
         <div className="row">
           <Btn primary onClick={save}>Save</Btn>
-          <Btn onClick={async () => { await copyText(link); setNotice(link.length > 8000 ? "Link copied, but it is very long. Untick \"Include input\" to shorten it." : "Link copied. It opens and runs with no server."); }}>Copy share link</Btn>
-          <label className="check"><input type="checkbox" checked={withInput} onChange={(e) => setWithInput(e.target.checked)} /> Include input in link</label>
+          <Btn onClick={async () => { await copyText(link); setNotice(link.length > 8000 ? (withInput ? "Link copied, but it is very long. Untick \"Include input\" to shorten it." : "Link copied, but it is very long. Some apps may truncate it.") : "Link copied. It opens and runs with no server."); }}>Copy share link</Btn>
+          <label className="check"><input type="checkbox" checked={withInput} onChange={(e) => { setWithInput(e.target.checked); setNotice(null); }} aria-describedby="share-input-help" /> Include input in link</label>
         </div>
+        <p className="help" id="share-input-help">
+          {withInput
+            ? "Your input is encoded into the link, so anyone who has the link can read it. It is not uploaded to a server."
+            : "The link contains your steps and their settings (including any text typed into step options), but not the input box. Recipients start with an empty input. Nothing is uploaded to a server either way."}
+        </p>
         {notice && <p className="help" role="status">{notice}</p>}
       </section>
 

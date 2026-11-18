@@ -248,6 +248,9 @@ test.describe("sandbox", () => {
     await page.getByRole("button", { name: "Open", exact: true }).click();
     await expect(page.getByLabel(/Tool name/)).toHaveValue("Fruit Fixer");
     await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
+    // Input is not shared unless the user opts in.
+    const includeInput = page.getByLabel("Include input in link");
+    await expect(includeInput).not.toBeChecked();
     await page.getByRole("button", { name: "Copy share link" }).click();
     const link = await page.evaluate(() => navigator.clipboard.readText());
     expect(link).toMatch(/\/sandbox#r=z\./);
@@ -255,8 +258,26 @@ test.describe("sandbox", () => {
     const p2 = await ctx.newPage();
     await p2.goto(link);
     await expect(p2.getByLabel(/Tool name/)).toHaveValue("Fruit Fixer");
-    await expect(p2.getByTestId("output")).toContainText("fruit IN ('APPLE', 'BANANA', 'CHERRY', 'DATE')");
+    await expect(p2.getByLabel("Input", { exact: true })).toHaveValue("");
+    await expect(page.getByText(/Recipients start with an empty input/)).toBeVisible();
+    await expect(p2.getByTestId("output")).toBeVisible();
+    await expect(p2.getByTestId("output")).not.toContainText("APPLE");
     await ctx.close();
+
+    // Opting in shares the input and says what recipients receive.
+    await includeInput.check();
+    await expect(page.getByText(/anyone who has the link can read it/i)).toBeVisible();
+    await expect(page.getByText(/not uploaded to a server/i)).toBeVisible();
+    await expect.poll(async () => {
+      await page.getByRole("button", { name: "Copy share link" }).click();
+      return (await page.evaluate(() => navigator.clipboard.readText())).length;
+    }).toBeGreaterThan(link.length);
+    const link2 = await page.evaluate(() => navigator.clipboard.readText());
+    const ctx2 = await browser.newContext();
+    const p3 = await ctx2.newPage();
+    await p3.goto(link2);
+    await expect(p3.getByTestId("output")).toContainText("fruit IN ('APPLE', 'BANANA', 'CHERRY', 'DATE')");
+    await ctx2.close();
   });
 });
 
