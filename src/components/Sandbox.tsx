@@ -4,7 +4,7 @@ import { allBlocks, blockById } from "@/engine/registry";
 import { runPipeline, type StepResult } from "@/engine/run";
 import { decodeRecipe, encodeRecipe } from "@/engine/recipe";
 import { defaultParams, CATEGORIES, type Params, type Recipe } from "@/engine/types";
-import { Btn, CopyBtn, DownloadBtn, ErrorNote } from "./kit";
+import { Btn, CopyBtn, DownloadBtn, ErrorNote, ResultStatus } from "./kit";
 import { ParamControls } from "./ParamControls";
 import { copyText } from "@/lib/clipboard";
 
@@ -156,7 +156,8 @@ export function Sandbox() {
         <header className="panel-head"><h2>Output</h2><div className="panel-actions"><CopyBtn text={output} /><DownloadBtn data={output} name={isSvg ? "output.svg" : "output.txt"} type={isSvg ? "image/svg+xml" : "text/plain"} /></div></header>
         <ErrorNote error={error ? `Block ${error.index + 1} (${blockById(steps[error.index]?.b)?.name ?? "?"}): ${error.message}` : null} />
         {isSvg && !error && /* eslint-disable-next-line @next/next/no-img-element */ <img className="preview-img" alt="SVG output" src={`data:image/svg+xml;utf8,${encodeURIComponent(output)}`} />}
-        <pre className="mono text-out" data-testid="output" aria-live="polite" tabIndex={0}>{output}</pre>
+        <pre className="mono text-out" data-testid="output" tabIndex={0}>{output}</pre>
+        <ResultStatus output={output} error={error ? error.message : null} />
       </section>
 
       <section className="panel">
