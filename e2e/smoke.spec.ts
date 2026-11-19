@@ -111,6 +111,9 @@ test("Data: JSON formatter explains errors, CSV converts both ways", async ({ pa
   await expect(alert(page)).toContainText(/Invalid JSON at line 1, column \d+/);
   await page.goto("/csv-json");
   await expect(out(page)).toContainText('"city": "New York, NY"');
+  await expect(out(page)).toContainText('"id": "001"');
+  await page.getByLabel("Convert numbers and booleans").check();
+  await expect(out(page)).toContainText('"id": 1,');
   await page.getByRole("tab", { name: "JSON to CSV" }).click();
   await expect(out(page)).toContainText("id,name");
   await page.goto("/sql-in-list");

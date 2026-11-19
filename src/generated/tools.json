@@ -317,14 +317,14 @@
     ],
     "recipe": {
       "name": "CSV to JSON",
-      "input": "id,name,city\n1,Ada,London\n2,Grace,\"New York, NY\"\n3,Linus,Helsinki",
+      "input": "id,name,city\n001,Ada,London\n002,Grace,\"New York, NY\"\n003,Linus,Helsinki",
       "steps": [
         {
           "b": "csv-to-json",
           "p": {
             "header": true,
             "delimiter": "",
-            "types": true
+            "types": false
           }
         }
       ]

@@ -8,13 +8,13 @@ export const meta: ToolMeta = {
   blurb: "Converts CSV to JSON, or JSON to CSV.",
   description: "Convert CSV to JSON or JSON to CSV in your browser. Handles quoted fields, custom delimiters and header rows.",
   keywords: ["csv", "json", "convert", "papaparse", "spreadsheet"],
-  recipe: { name: "CSV to JSON", input: "id,name,city\n1,Ada,London\n2,Grace,\"New York, NY\"\n3,Linus,Helsinki", steps: [{ b: "csv-to-json", p: { header: true, delimiter: "", types: true } }] },
+  recipe: { name: "CSV to JSON", input: "id,name,city\n001,Ada,London\n002,Grace,\"New York, NY\"\n003,Linus,Helsinki", steps: [{ b: "csv-to-json", p: { header: true, delimiter: "", types: false } }] },
 };
 
 export const blocks: BlockDef[] = [
   {
     id: "csv-to-json", name: "CSV to JSON", category: "Data", description: "Parses CSV into a JSON array.",
-    params: [bool("header", "First row is header", true), sel("delimiter", "Delimiter", [["", "Auto"], [",", "Comma"], [";", "Semicolon"], ["\t", "Tab"], ["|", "Pipe"]], ""), bool("types", "Convert numbers and booleans", true)],
+    params: [bool("header", "First row is header", true), sel("delimiter", "Delimiter", [["", "Auto"], [",", "Comma"], [";", "Semicolon"], ["\t", "Tab"], ["|", "Pipe"]], ""), bool("types", "Convert numbers and booleans", false, "Off keeps every value as text, so identifiers and leading zeros such as 001 stay intact. On turns 001 into 1, true into a boolean and empty cells into null.")],
     run: async (input, p) => {
       if (!input.trim()) throw new Error("Nothing to convert. Paste some CSV.");
       const Papa = (await import("papaparse")).default;
