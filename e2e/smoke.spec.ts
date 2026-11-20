@@ -166,6 +166,12 @@ test("Convert: timestamp, time zone, units, color, base", async ({ page }) => {
   await expect(out(page)).toContainText("Asia/Tokyo");
   await page.goto("/units");
   await expect(out(page)).toContainText("10 km = 6.21371 mi");
+  await page.getByLabel("Conversions, one per line").fill("1 byte to bit\n1 MB to MiB");
+  await expect(out(page)).toContainText("1 byte = 8 bits");
+  await expect(out(page)).toContainText("1 MB = 0.953674 MiB");
+  const help = page.getByRole("region", { name: "Data units" });
+  await expect(help).toContainText("KiB");
+  await expect(help).toContainText("Mbit");
   await page.goto("/color");
   await expect(out(page)).toContainText("rgb(31 63 168)");
   await expect(page.getByRole("img", { name: /Swatch/ })).toBeVisible();

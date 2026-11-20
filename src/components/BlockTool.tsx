@@ -12,8 +12,8 @@ import { ParamControls } from "./ParamControls";
  * "Take it apart" opens the same recipe, with current input and settings, in the Sandbox.
  */
 export function BlockTool({
-  recipe, blocks, inputLabel = "Input", outputLabel = "Result", outputName = "result.txt", acceptFile, inputRows = 10, renderOutput, extra,
-}: { renderOutput?: (out: string) => ReactNode; extra?: (out: string) => ReactNode; recipe: Recipe; blocks: BlockDef[]; inputLabel?: string; outputLabel?: string; outputName?: string; acceptFile?: string; inputRows?: number }) {
+  recipe, blocks, inputLabel = "Input", outputLabel = "Result", outputName = "result.txt", acceptFile, inputRows = 10, renderOutput, extra, help,
+}: { help?: ReactNode; renderOutput?: (out: string) => ReactNode; extra?: (out: string) => ReactNode; recipe: Recipe; blocks: BlockDef[]; inputLabel?: string; outputLabel?: string; outputName?: string; acceptFile?: string; inputRows?: number }) {
   const lookup = useMemo(() => new Map(blocks.map((b) => [b.id, b])), [blocks]);
   const [input, setInput] = useState(recipe.input);
   const [steps, setSteps] = useState<Step[]>(() => recipe.steps.map((s) => ({ b: s.b, p: { ...defaultParams(lookup.get(s.b)!), ...s.p } })));
@@ -93,6 +93,8 @@ export function BlockTool({
         <pre className={`mono text-out ${renderOutput && output ? "sr-only" : ""}`} data-testid="output" aria-live="polite" tabIndex={0}>{output}</pre>
         <p className="meter">{ms !== null ? `${ms < 1 ? "<1" : Math.round(ms)} ms` : ""}</p>
       </section>
+
+      {help}
     </div>
   );
 }

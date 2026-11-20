@@ -790,7 +790,7 @@
     "name": "Units",
     "category": "Convert",
     "blurb": "Length, mass, volume, speed, area, data, time and temperature.",
-    "description": "Convert units of length, mass, volume, area, speed, data size, time and temperature. Write '10 km to mi' or just '10 km' to see every unit.",
+    "description": "Convert units of length, mass, volume, area, speed, data size, time and temperature. Write '10 km to mi' or just '10 km' to see every unit. Data sizes distinguish bits from bytes and MB from MiB.",
     "keywords": [
       "units",
       "convert",
