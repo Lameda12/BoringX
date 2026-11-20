@@ -196,11 +196,53 @@ describe("convert blocks", () => {
   it("units", async () => {
     expect(await run("units", "10 km to mi")).toBe("10 km = 6.21371 mi");
     expect(await run("units", "212 f to c")).toBe("212 f = 100 c");
-    expect(await run("units", "1 gib to mib")).toBe("1 gib = 1024 mib");
+    expect(await run("units", "1 gib to mib")).toBe("1 GiB = 1024 MiB");
     expect(await run("units", "1 kg to lb")).toContain("2.20462");
     expect(await run("units", "5 km to kg")).toContain("Cannot convert");
     expect(await run("units", "5 zorp to kg")).toContain("Unknown unit");
     expect(await run("units", "2 cups")).toContain("= 473.176");
+  });
+  it("units: bits, bytes, decimal and binary data units", async () => {
+    expect(await run("units", "1 byte to bit")).toBe("1 byte = 8 bits");
+    expect(await run("units", "8 bits to bytes")).toBe("8 bits = 1 byte");
+    expect(await run("units", "1 MB to MiB")).toBe("1 MB = 0.953674 MiB");
+    expect(await run("units", "1 MiB to MB")).toBe("1 MiB = 1.04858 MB");
+    expect(await run("units", "1 MB to Mb")).toBe("1 MB = 8 Mbit");
+    expect(await run("units", "1 Mbit to kB")).toBe("1 Mbit = 125 kB");
+    expect(await run("units", "1 Mb to MB")).toBe("1 Mbit = 0.125 MB");
+    expect(await run("units", "1 MB to mbit")).toBe("1 MB = 8 Mbit");
+    expect(await run("units", "1 kB to B")).toBe("1 kB = 1000 bytes");
+    expect(await run("units", "1 KiB to bytes")).toBe("1 KiB = 1024 bytes");
+    expect(await run("units", "1 megabyte to mebibytes")).toBe("1 MB = 0.953674 MiB");
+  });
+  it("units: legacy lowercase data aliases are kept and shown canonically", async () => {
+    expect(await run("units", "1 MB to mb")).toBe("1 MB = 1 MB");
+    expect(await run("units", "1 kb to b")).toBe("1 kB = 1000 bytes");
+    expect(await run("units", "1 gb to mb")).toBe("1 GB = 1000 MB");
+    expect(await run("units", "2 tib to gib")).toBe("2 TiB = 2048 GiB");
+  });
+  it("units: exact-case symbols, mixed case and negative plurals", async () => {
+    expect(await run("units", "1 Kb to bits")).toBe("1 kbit = 1000 bits");
+    expect(await run("units", "1 Gb to MB")).toBe("1 Gbit = 125 MB");
+    expect(await run("units", "1 Tb to GB")).toBe("1 Tbit = 125 GB");
+    expect(await run("units", "1 KB to B")).toBe("1 kB = 1000 bytes");
+    expect(await run("units", "1 mB to MB")).toBe("1 MB = 1 MB");
+    expect(await run("units", "-1 byte to bit")).toBe("-1 byte = -8 bits");
+    expect(await run("units", "0.5 byte to bit")).toBe("0.5 bytes = 4 bits");
+  });
+  it("units: a bare data amount lists canonical names", async () => {
+    const o = await run("units", "1 byte");
+    expect(o).toContain("= 8 bits");
+    expect(o).toContain("= 0.001 kB");
+    expect(o).toMatch(/= 9\.5367\d+e-7 MiB/);
+    expect(o).not.toMatch(/ mb$/m);
+  });
+  it("units: help text lists every supported data unit", async () => {
+    const { DATA_UNIT_HELP } = await import("@/tools/units");
+    const flat = DATA_UNIT_HELP.flatMap((g) => g.units).join(" ");
+    for (const u of ["bit", "byte", "kB", "MB", "GB", "TB", "KiB", "MiB", "GiB", "TiB", "kbit", "Mbit", "Gbit", "Tbit", "Kb", "Mb", "Gb", "Tb"]) expect(flat).toContain(u);
+    expect(DATA_UNIT_HELP.map((g) => g.label).join(" ")).toMatch(/Decimal/);
+    expect(DATA_UNIT_HELP.map((g) => g.label).join(" ")).toMatch(/Binary/);
   });
   it("color", async () => {
     const o = await run("color", "#1f3fa8");
