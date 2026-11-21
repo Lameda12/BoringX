@@ -162,6 +162,11 @@ test("Generate: uuid, password, qr, filler, placeholder", async ({ page }) => {
 test("Convert: timestamp, time zone, units, color, base", async ({ page }) => {
   await page.goto("/unix-timestamp");
   await expect(out(page)).toContainText("2023-11-14T22:13:20.000Z");
+  await expect(out(page)).toContainText("read as: seconds (auto)");
+  await page.getByLabel("Input unit").selectOption("milliseconds");
+  await page.getByLabel(/Timestamps or dates/).fill("86400000");
+  await expect(out(page)).toContainText("1970-01-02T00:00:00.000Z");
+  await expect(out(page)).toContainText("read as: milliseconds");
   await page.goto("/time-zone");
   await expect(out(page)).toContainText("Asia/Tokyo");
   await page.goto("/units");
