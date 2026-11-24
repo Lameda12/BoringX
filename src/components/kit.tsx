@@ -34,12 +34,15 @@ export function Progress({ value, label }: { value: number | null; label?: strin
   );
 }
 
-export function CopyBtn({ text, label = "Copy" }: { text: string | (() => string); label?: string }) {
+export function CopyBtn({ text, label = "Copy", disabled }: { text: string | (() => string); label?: string; disabled?: boolean }) {
   const [done, setDone] = useState(false);
   return (
     <Btn
+      disabled={disabled}
       onClick={async () => {
-        await copyText(typeof text === "function" ? text() : text);
+        const value = typeof text === "function" ? text() : text;
+        if (disabled || value === "") return;
+        await copyText(value);
         setDone(true);
         setTimeout(() => setDone(false), 1200);
       }}
@@ -49,8 +52,8 @@ export function CopyBtn({ text, label = "Copy" }: { text: string | (() => string
   );
 }
 
-export function DownloadBtn({ data, name, type, label = "Download", primary }: { data: Blob | string | (() => Blob | string); name: string; type?: string; label?: string; primary?: boolean }) {
-  return <Btn primary={primary} onClick={() => dl(typeof data === "function" ? data() : data, name, type)}>{label}</Btn>;
+export function DownloadBtn({ data, name, type, label = "Download", primary, disabled }: { data: Blob | string | (() => Blob | string); name: string; type?: string; label?: string; primary?: boolean; disabled?: boolean }) {
+  return <Btn primary={primary} disabled={disabled} onClick={() => { if (!disabled) dl(typeof data === "function" ? data() : data, name, type); }}>{label}</Btn>;
 }
 
 export function Stat({ k, v }: { k: string; v: ReactNode }) {
@@ -166,11 +169,11 @@ export function useObjectUrl(blob: Blob | null | undefined) {
 }
 
 /** Download whose content is produced asynchronously (e.g. rasterising an SVG). */
-export function AsyncDownloadBtn({ make, name, label, primary }: { make: () => Promise<Blob>; name: string; label: string; primary?: boolean }) {
+export function AsyncDownloadBtn({ make, name, label, primary, disabled }: { make: () => Promise<Blob>; name: string; label: string; primary?: boolean; disabled?: boolean }) {
   const [err, setErr] = useState<string | null>(null);
   return (
     <>
-      <Btn primary={primary} onClick={async () => { try { setErr(null); dl(await make(), name); } catch (e) { setErr(e instanceof Error ? e.message : "Download failed."); } }}>{label}</Btn>
+      <Btn primary={primary} disabled={disabled} onClick={async () => { if (disabled) return; try { setErr(null); dl(await make(), name); } catch (e) { setErr(e instanceof Error ? e.message : "Download failed."); } }}>{label}</Btn>
       {err && <span role="alert" className="note-error">{err}</span>}
     </>
   );
