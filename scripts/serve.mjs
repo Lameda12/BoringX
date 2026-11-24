@@ -10,7 +10,8 @@ const rules = (cfg.headers || []).map((r) => ({ re: new RegExp("^" + r.source.re
 const types = { ".html": "text/html; charset=utf-8", ".js": "text/javascript", ".mjs": "text/javascript", ".css": "text/css", ".json": "application/json", ".webmanifest": "application/manifest+json", ".svg": "image/svg+xml", ".png": "image/png", ".wasm": "application/wasm", ".woff2": "font/woff2", ".woff": "font/woff", ".txt": "text/plain", ".xml": "application/xml", ".gz": "application/gzip", ".ico": "image/x-icon" };
 
 http.createServer((req, res) => {
-  let p = decodeURIComponent(new URL(req.url, "http://x").pathname);
+  let p;
+  try { p = decodeURIComponent(new URL(req.url, "http://x").pathname); } catch { res.writeHead(400); return res.end("Bad request"); }
   const cands = [p, p + ".html", path.join(p, "index.html")];
   let file = cands.map((c) => path.join(root, c)).find((f) => f.startsWith(root) && fs.existsSync(f) && fs.statSync(f).isFile());
   const h = {};

@@ -38,6 +38,19 @@ npm run test:e2e   # Playwright smoke tests (build first)
 
 Node 20+. Playwright uses `/opt/pw-browsers/chromium` if present, else its own browser (`npx playwright install chromium`).
 
+## Self-hosting with Docker
+
+```bash
+docker build -t boringx .
+docker run --rm -p 4173:4173 boringx   # http://localhost:4173
+```
+
+The image runs `npm ci` and `npm run build` (which copies the OCR data, the background-removal model and the AVIF encoder into the export), then serves `out/` with `scripts/serve.mjs`. That server applies the route-specific headers from `vercel.json`: the default Content-Security-Policy (`connect-src 'self' blob: data:`, so the browser refuses requests to other hosts), the stricter policy on `/workers/*` (`default-src 'none'`, `connect-src 'none'`) that confines the Custom JavaScript Worker, and the looser one on `/remove-background` (`'unsafe-eval'` for the ONNX runtime). A plain static container (nginx, `python -m http.server`) would omit these and weaken the privacy guarantee, so keep this server or reproduce those headers at your proxy. Terminate TLS in front of it; service workers and some browser APIs need HTTPS outside localhost.
+
+Pass `--build-arg SITE_URL=https://your.origin` to `docker build` so the generated sitemap uses your origin (the default is the hosted site). Use `docker run --restart unless-stopped` for a long-running deployment.
+
+First-use downloads come from your own container, never a third party: OCR fetches roughly 7 MB (one engine plus English data), Remove Background roughly 55 MB (model plus runtime), and Convert to AVIF about 3 MB, only when the browser cannot encode AVIF itself. After first use these are cached by the browser. Offline use needs the service worker, which only runs over HTTPS or on localhost, and only covers pages and assets the visitor has already loaded; the browser may evict cached data. A fresh browser must reach the container once per tool first.
+
 ## Adding tool 41
 
 Create `src/tools/<slug>.tsx` exporting `meta`, optionally `blocks`, and a default component. Text and data tools are usually five lines on top of `toolFromRecipe(...)`. `npm run gen` (run automatically before dev and build) rebuilds the registry, routes, search index and sitemap. Run `node scripts/make-og.mjs` to render its OG card.
