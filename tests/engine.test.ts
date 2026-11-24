@@ -64,6 +64,15 @@ describe("recipe links", () => {
     const back = await decodeRecipe(await encodeRecipe(r));
     expect((await runPipeline(back.input, back.steps, blockById)).output).toBe("a\nb\nc");
   });
+  it("a timestamp recipe keeps its selected input unit through a link", async () => {
+    const r = { name: "t", input: "86400000", steps: [{ b: "timestamp", p: { tz: "UTC", unit: "milliseconds" } }] };
+    const back = await decodeRecipe(await encodeRecipe(r));
+    expect(back.steps[0].p.unit).toBe("milliseconds");
+    expect((await runPipeline(back.input, back.steps, blockById)).output).toContain("1970-01-02T00:00:00.000Z");
+    // links made before the unit existed still work and keep the old (auto) reading
+    const old = { name: "t", input: "86400000", steps: [{ b: "timestamp", p: { tz: "UTC" } }] };
+    expect((await runPipeline(old.input, old.steps, blockById)).output).toContain("1972-09-27T00:00:00.000Z");
+  });
 });
 
 describe("custom JS worker core", () => {

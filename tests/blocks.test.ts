@@ -189,6 +189,25 @@ describe("convert blocks", () => {
     expect(await run("timestamp", "garbage", {})).toContain("Could not read");
     await fails("timestamp", "0", { tz: "Mars/Base" }, /not a time zone/);
   });
+  it("timestamp input unit", async () => {
+    const ms = await run("timestamp", "86400000", { tz: "UTC", unit: "milliseconds" });
+    expect(ms).toContain("ISO UTC:  1970-01-02T00:00:00.000Z");
+    expect(ms).toContain("read as:  milliseconds");
+    const sec = await run("timestamp", "86400000", { tz: "UTC", unit: "seconds" });
+    expect(sec).toContain("ISO UTC:  1972-09-27T00:00:00.000Z");
+    expect(sec).toContain("read as:  seconds");
+    // seconds mode must not auto-switch for large values
+    expect(await run("timestamp", "1700000000000", { tz: "UTC", unit: "seconds" })).toContain("ISO UTC:  +055840-11-08T22:13:20.000Z");
+    // auto keeps the old heuristic and labels its choice
+    const a1 = await run("timestamp", "86400000", { tz: "UTC" });
+    expect(a1).toContain("1972-09-27T00:00:00.000Z");
+    expect(a1).toContain("read as:  seconds (auto)");
+    expect(await run("timestamp", "1700000000000", { tz: "UTC", unit: "auto" })).toContain("read as:  milliseconds (auto)");
+    // dates and "now" are not numeric: no unit label
+    expect(await run("timestamp", "2026-01-01T00:00:00Z", { tz: "UTC", unit: "milliseconds" })).not.toContain("read as:");
+    expect(await run("timestamp", "now", { tz: "UTC" })).not.toContain("read as:");
+    await fails("timestamp", "0", { tz: "UTC", unit: "days" }, /unit/i);
+  });
   it("timezone (with DST)", async () => {
     const o = await run("timezone", "2026-03-08 09:00", { from: "America/Halifax", to: "UTC, Asia/Tokyo" });
     expect(o).toMatch(/UTC\s+2026-03-08 12:00:00/); // DST began 2:00 that morning, so Halifax is UTC-3
