@@ -13,7 +13,7 @@ fs.writeFileSync(path.join(out, "sitemap.xml"), `<?xml version="1.0" encoding="U
 const walk = (d) => fs.readdirSync(d, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(path.join(d, e.name)) : [path.join(d, e.name)]));
 const rel = (f) => "/" + path.relative(out, f).split(path.sep).join("/");
 const files = walk(out);
-const pre = new Set(["/", "/sandbox", "/about", "/privacy", "/manifest.webmanifest", "/icon.svg", "/icon-192.png", "/apple-touch-icon.png", "/pdf.worker.min.mjs", "/workers/custom-js.js"]);
+const pre = new Set(["/", "/sandbox", "/about", "/privacy", "/manifest.webmanifest", "/icon.svg", "/icon-192.png", "/apple-touch-icon.png", "/pdf.worker.min.mjs", "/workers/custom-js.js", "/workers/regex.js"]);
 for (const t of tools) pre.add("/" + t.slug);
 for (const f of files) { const r = rel(f); if (r.startsWith("/_next/static/") && !r.endsWith(".map")) pre.add(r); }
 const list = [...pre].sort();

@@ -143,6 +143,22 @@ test("Dev: base64, jwt, regex, hash", async ({ page }) => {
   await expect(out(page)).toContainText("https%3A%2F%2Fexample.com");
 });
 
+test("Regex Tester: a pathological pattern is stopped and the page stays usable", async ({ page }) => {
+  await page.goto("/regex-tester");
+  await expect(out(page)).toContainText("3 matches");
+  await page.getByLabel("Pattern", { exact: true }).fill("(a+)+$");
+  await page.getByLabel("Flags", { exact: true }).fill("");
+  await page.locator("textarea.text-in").fill("a".repeat(45) + "b");
+  // the main thread is free: typing elsewhere responds while the worker is busy
+  await page.getByLabel("Replacement").fill("still responsive");
+  await expect(page.getByLabel("Replacement")).toHaveValue("still responsive");
+  await expect(alert(page).first()).toContainText("Regex block ran longer than 2s and was stopped", { timeout: 8000 });
+  // a valid pattern works again without reloading
+  await page.getByLabel("Pattern", { exact: true }).fill("a+");
+  await expect(alert(page)).toHaveCount(0);
+  await expect(out(page)).toContainText("1 match");
+});
+
 test("Generate: uuid, password, qr, filler, placeholder", async ({ page }) => {
   await page.goto("/uuid");
   await expect(out(page)).toHaveText(/^([0-9a-f-]{36}\n){4}[0-9a-f-]{36}$/);
@@ -236,6 +252,16 @@ test.describe("sandbox", () => {
     await expect(out(page)).toHaveText("blocked");
     await page.locator(".step textarea").first().fill("while(true){}");
     await expect(alert(page).first()).toContainText("ran longer than 2s", { timeout: 8000 });
+  });
+
+  test("regex blocks are stopped on a pathological pattern, then recover", async ({ page }) => {
+    await page.goto("/sandbox#r=" + await page.evaluate(async () => {
+      const r = { name: "", input: "a".repeat(45) + "b", steps: [{ b: "replace", p: { find: "(a+)+$", with: "x", regex: true } }] };
+      return "p." + btoa(JSON.stringify(r)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+    }));
+    await expect(alert(page).first()).toContainText("Find and replace block ran longer than 2s and was stopped", { timeout: 8000 });
+    await page.getByLabel("Find", { exact: true }).fill("a+");
+    await expect(alert(page)).toHaveCount(0, { timeout: 8000 });
   });
 
   test("name, save, share link opens and runs in a fresh browser context", async ({ page, browser }) => {

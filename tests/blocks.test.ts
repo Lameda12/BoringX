@@ -1,6 +1,9 @@
+import { installWorkerShim } from "./helpers/node-worker";
 import { describe, expect, it } from "vitest";
 import { allBlocks, blockById } from "@/engine/registry";
 import { defaultParams, type Params } from "@/engine/types";
+
+installWorkerShim();
 
 async function run(id: string, input: string, params: Params = {}) {
   const b = blockById(id);

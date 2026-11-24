@@ -53,7 +53,7 @@ Create `src/tools/<slug>.tsx` exporting `meta`, optionally `blocks`, and a defau
 
 - PDF Compress is either a lossless tidy-up (modest gains) or a lossy flatten to JPEG pages (text no longer selectable).
 - Remove Background and OCR download their engine from this site on first use (about 45 MB and 15 MB), then work offline. OCR is English only.
-- Regex Tester runs on the main thread; a pathological pattern can stall the tab.
+- Regex patterns (Regex Tester, and the Sandbox Regex and Find and replace blocks) run in a Worker with a 2 second timeout, so a pathological pattern is stopped with an error instead of stalling the tab.
 - HEIC/GIF/TIFF cannot be stripped losslessly in the browser, so Strip EXIF supports JPEG, PNG and WebP.
 
 MIT licensed.

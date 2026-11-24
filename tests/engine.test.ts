@@ -1,3 +1,4 @@
+import { installWorkerShim } from "./helpers/node-worker";
 import { describe, expect, it } from "vitest";
 import fs from "node:fs";
 import vm from "node:vm";
@@ -12,6 +13,8 @@ import { md5 } from "@/lib/md5";
 import { stripImage, stripJpeg, readExif } from "@/lib/exif";
 import { buildIco } from "@/tools/favicon-generator";
 import { jsonToTs } from "@/tools/json-to-typescript";
+
+installWorkerShim();
 
 describe("pipeline", () => {
   it("runs steps in order and passes output along", async () => {
