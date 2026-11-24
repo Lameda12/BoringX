@@ -178,6 +178,22 @@ test("Generate: uuid, password, qr, filler, placeholder", async ({ page }) => {
   await expect(page.locator("img.preview-img")).toBeVisible();
 });
 
+test("Password: opens on settings and results, no input panel; still works in Sandbox", async ({ page }) => {
+  await page.goto("/password");
+  await expect(page.getByRole("heading", { name: "Settings" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Passwords" })).toBeVisible();
+  await expect(page.getByText("Input (ignored)")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Paste" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Clear" })).toHaveCount(0);
+  await expect(page.getByText("Load file")).toHaveCount(0);
+  await expect(out(page)).toHaveText(/^(\S{20}\n){2}\S{20}$/);
+  const link = page.getByRole("link", { name: "Take it apart" });
+  await expect(link).toHaveAttribute("href", /\/sandbox#r=/);
+  await link.click();
+  await expect(page).toHaveURL(/\/sandbox#r=/);
+  await expect(page.getByTestId("output")).toHaveText(/^(\S{20}\n){2}\S{20}$/);
+});
+
 test("Convert: timestamp, time zone, units, color, base", async ({ page }) => {
   await page.goto("/unix-timestamp");
   await expect(out(page)).toContainText("2023-11-14T22:13:20.000Z");
