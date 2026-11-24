@@ -64,11 +64,20 @@ describe("data blocks", () => {
     await fails("json-format", "   ", {}, /Nothing to format/);
   });
   it("csv-to-json and json-to-csv", async () => {
-    const j = JSON.parse(await run("csv-to-json", 'id,name\n1,"Smith, A"\n2,B'));
+    const j = JSON.parse(await run("csv-to-json", 'id,name\n1,"Smith, A"\n2,B', { types: true }));
     expect(j).toEqual([{ id: 1, name: "Smith, A" }, { id: 2, name: "B" }]);
     expect(JSON.parse(await run("csv-to-json", "a;b\n1;2", { delimiter: ";", types: false }))).toEqual([{ a: "1", b: "2" }]);
     expect(await run("json-to-csv", '[{"a":1,"b":"x,y"},{"a":2,"b":"z"}]')).toBe('a,b\n1,"x,y"\n2,z');
     await fails("json-to-csv", "[1,2]", {}, /array of objects/);
+  });
+  it("csv-to-json keeps strings by default and converts only when asked", async () => {
+    const csv = "id,qty,ok\n001,5,true\n0042,7,false";
+    expect(JSON.parse(await run("csv-to-json", csv))).toEqual([{ id: "001", qty: "5", ok: "true" }, { id: "0042", qty: "7", ok: "false" }]);
+    expect(JSON.parse(await run("csv-to-json", csv, { types: true }))).toEqual([{ id: 1, qty: 5, ok: true }, { id: 42, qty: 7, ok: false }]);
+    const types = blockById("csv-to-json")!.params!.find((d) => d.key === "types")!;
+    expect(types.default).toBe(false);
+    expect(types.help).toMatch(/identifier/i);
+    expect(types.help).toMatch(/leading zero/i);
   });
   it("csv-to-xlsx and xlsx-to-csv roundtrip", async () => {
     const b64 = await run("csv-to-xlsx", "a,b\n1,2\n3,4");
