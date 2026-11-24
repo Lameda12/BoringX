@@ -12,13 +12,15 @@ import { ParamControls } from "./ParamControls";
  * "Take it apart" opens the same recipe, with current input and settings, in the Sandbox.
  */
 export function BlockTool({
-  recipe, blocks, inputLabel = "Input", outputLabel = "Result", outputName = "result.txt", acceptFile, inputRows = 10, renderOutput, extra,
-}: { renderOutput?: (out: string) => ReactNode; extra?: (out: string) => ReactNode; recipe: Recipe; blocks: BlockDef[]; inputLabel?: string; outputLabel?: string; outputName?: string; acceptFile?: string; inputRows?: number }) {
+  recipe, blocks, inputLabel = "Input", outputLabel = "Result", outputName = "result.txt", acceptFile, inputRows = 10, renderOutput, extra, regenerateLabel,
+}: { regenerateLabel?: string; renderOutput?: (out: string) => ReactNode; extra?: (out: string) => ReactNode; recipe: Recipe; blocks: BlockDef[]; inputLabel?: string; outputLabel?: string; outputName?: string; acceptFile?: string; inputRows?: number }) {
   const lookup = useMemo(() => new Map(blocks.map((b) => [b.id, b])), [blocks]);
   const [input, setInput] = useState(recipe.input);
   const [steps, setSteps] = useState<Step[]>(() => recipe.steps.map((s) => ({ b: s.b, p: { ...defaultParams(lookup.get(s.b)!), ...s.p } })));
   const [output, setOutput] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [invalid, setInvalid] = useState(false);
+  const [runs, setRuns] = useState(0);
   const [ms, setMs] = useState<number | null>(null);
   const [href, setHref] = useState("/sandbox");
   const seq = useRef(0);
@@ -30,9 +32,10 @@ export function BlockTool({
       if (id !== seq.current) return;
       setOutput(r.error ? "" : r.output);
       setError(r.error?.message ?? null);
+      setInvalid(!!r.error);
       setMs(performance.now() - t0);
     });
-  }, [input, steps, lookup]);
+  }, [input, steps, lookup, runs]);
 
   useEffect(() => {
     let live = true;
@@ -82,6 +85,9 @@ export function BlockTool({
         <header className="panel-head">
           <h2>{outputLabel}</h2>
           <div className="panel-actions">
+            {regenerateLabel && (
+              <button type="button" className="btn" aria-disabled={invalid || undefined} onClick={() => { if (!invalid) setRuns((n) => n + 1); }}>{regenerateLabel}</button>
+            )}
             <CopyBtn text={output} />
             <DownloadBtn data={output} name={outputName} type="text/plain" />
             {extra?.(output)}
