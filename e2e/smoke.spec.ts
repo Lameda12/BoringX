@@ -9,7 +9,7 @@ test.describe("home", () => {
   test("filters tools as you type and offers to build when nothing matches", async ({ page }) => {
     await page.goto("/");
     await expect(page.getByRole("heading", { level: 1 })).toContainText("Boring");
-    await expect(page.locator("a.tool-row")).toHaveCount(41); // 40 tools + sandbox
+    await expect(page.locator("a.tool-row")).toHaveCount(42); // 41 tools + sandbox
     await page.locator("#hero-q").fill("pdf");
     await expect(page.locator("a.tool-row")).toHaveCount(5);
     await page.locator("#hero-q").fill("zzqx wibble");
@@ -120,6 +120,24 @@ test("Data: JSON formatter explains errors, CSV converts both ways", async ({ pa
   await expect(out(page)).toHaveText("id IN (1001, 1002, 1003, 1004)");
   await page.goto("/json-to-typescript");
   await expect(out(page)).toContainText("export interface Root");
+});
+
+test("Data: YAML and JSON convert both ways, locally, with located errors", async ({ page }) => {
+  const external: string[] = [];
+  page.on("request", (r) => { const u = new URL(r.url()); if (u.hostname !== "localhost" && !["data:", "blob:"].includes(u.protocol)) external.push(r.url()); });
+  await page.goto("/json-yaml");
+  await expect(out(page)).toContainText('"name": "BoringX"');
+  await page.getByLabel("YAML", { exact: true }).fill("a: 1\nb: !Ref x\n");
+  await expect(alert(page)).toContainText(/line 2, column \d+.*!Ref/);
+  await expect(out(page)).toHaveText("");
+  await page.getByRole("tab", { name: "JSON to YAML" }).click();
+  await expect(out(page)).toContainText("- id: 1");
+  await page.getByLabel("JSON", { exact: true }).fill('{"on":"yes"}');
+  await expect(out(page)).toHaveText('"on": "yes"');
+  await page.getByRole("link", { name: "Take it apart" }).click();
+  await expect(page.locator(".step-title")).toHaveText(["JSON to YAML"]);
+  await expect(out(page)).toHaveText('"on": "yes"');
+  expect(external).toEqual([]);
 });
 
 test("Data: CSV to Excel builds an xlsx and reads it back", async ({ page }) => {
@@ -367,7 +385,7 @@ test.describe("trust", () => {
 test("mobile: usable at 380px with no horizontal scroll", async ({ browser }) => {
   const ctx = await browser.newContext({ viewport: { width: 380, height: 760 }, hasTouch: true });
   const page = await ctx.newPage();
-  for (const p of ["/", "/pdf-merge", "/sandbox", "/json-formatter", "/image-resize"]) {
+  for (const p of ["/", "/pdf-merge", "/sandbox", "/json-formatter", "/json-yaml", "/image-resize"]) {
     await page.goto(p);
     await page.waitForLoadState("networkidle");
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);

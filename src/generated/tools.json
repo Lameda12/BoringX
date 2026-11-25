@@ -417,6 +417,32 @@
     }
   },
   {
+    "slug": "json-yaml",
+    "name": "YAML to JSON and back",
+    "category": "Data",
+    "blurb": "Converts YAML to JSON, or JSON to YAML.",
+    "description": "Convert YAML to JSON or JSON to YAML in your browser. Errors give a line and column; anything JSON cannot hold is refused, not dropped.",
+    "keywords": [
+      "yaml",
+      "yml",
+      "json",
+      "convert",
+      "config"
+    ],
+    "recipe": {
+      "name": "YAML to JSON",
+      "input": "name: BoringX\ntools:\n  - id: 1\n    dull: true\n  - id: 2\n    dull: true\nnotes: null\n",
+      "steps": [
+        {
+          "b": "yaml-to-json",
+          "p": {
+            "indent": "2"
+          }
+        }
+      ]
+    }
+  },
+  {
     "slug": "base64",
     "name": "Base64",
     "category": "Dev",
