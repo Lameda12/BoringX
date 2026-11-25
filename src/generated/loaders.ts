@@ -21,6 +21,7 @@ export const loaders: Record<string, () => Promise<{ default: ComponentType }>> 
   "json-formatter": () => import("../tools/json-formatter"),
   "json-to-typescript": () => import("../tools/json-to-typescript"),
   "sql-in-list": () => import("../tools/sql-in-list"),
+  "json-yaml": () => import("../tools/json-yaml"),
   "base64": () => import("../tools/base64"),
   "hash": () => import("../tools/hash"),
   "jwt-decoder": () => import("../tools/jwt-decoder"),

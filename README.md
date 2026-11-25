@@ -1,6 +1,6 @@
 # BoringX
 
-Small tools that each do one dull job, entirely in your browser. 40 tools, plus a Sandbox for chaining them. No uploads, no accounts, no limits, no watermarks.
+Small tools that each do one dull job, entirely in your browser. 41 tools, plus a Sandbox for chaining them. No uploads, no accounts, no limits, no watermarks.
 
 ![Home](docs/home.png)
 
@@ -13,7 +13,7 @@ Small tools that each do one dull job, entirely in your browser. 40 tools, plus 
 - **PDF**: Merge, Split, Compress, PDF to Images, Images to PDF
 - **Image**: Compress, Resize and Crop, Convert (PNG/JPG/WebP/AVIF), Remove Background, Strip EXIF
 - **Text**: Word Count, Case Converter, Diff, Clean List, Markdown Preview
-- **Data**: JSON Formatter, CSV to JSON and back, CSV to Excel and back, SQL IN List, JSON to TypeScript
+- **Data**: JSON Formatter, CSV to JSON and back, YAML to JSON and back, CSV to Excel and back, SQL IN List, JSON to TypeScript
 - **Dev**: Base64, URL Encode/Decode, JWT Decoder, Regex Tester, Hash
 - **Generate**: UUID, Password, QR Code, Filler Text, Placeholder Image
 - **Convert**: Unix Timestamp, Time Zone, Units, Color, Number Base
@@ -51,7 +51,7 @@ Pass `--build-arg SITE_URL=https://your.origin` to `docker build` so the generat
 
 First-use downloads come from your own container, never a third party: OCR fetches roughly 7 MB (one engine plus English data), Remove Background roughly 55 MB (model plus runtime), and Convert to AVIF about 3 MB, only when the browser cannot encode AVIF itself. After first use these are cached by the browser. Offline use needs the service worker, which only runs over HTTPS or on localhost, and only covers pages and assets the visitor has already loaded; the browser may evict cached data. A fresh browser must reach the container once per tool first.
 
-## Adding tool 41
+## Adding tool 42
 
 Create `src/tools/<slug>.tsx` exporting `meta`, optionally `blocks`, and a default component. Text and data tools are usually five lines on top of `toolFromRecipe(...)`. `npm run gen` (run automatically before dev and build) rebuilds the registry, routes, search index and sitemap. Run `node scripts/make-og.mjs` to render its OG card.
 
@@ -64,6 +64,7 @@ Create `src/tools/<slug>.tsx` exporting `meta`, optionally `blocks`, and a defau
 
 ## Known limits
 
+- YAML to JSON reads one YAML 1.2 document. Custom and non-JSON tags, merge keys, non-text or repeated keys, `.inf`/`.nan` and numbers that would visibly change (such as integers a double cannot hold) are refused with an error; long decimal fractions are rounded as usual for JSON. Comments and anchors are not preserved (aliases are expanded). Some JSON syntax errors carry no line and column because the browser does not report one.
 - PDF Compress is either a lossless tidy-up (modest gains) or a lossy flatten to JPEG pages (text no longer selectable).
 - Remove Background and OCR download their engine from this site on first use (about 45 MB and 15 MB), then work offline. OCR is English only.
 - Regex patterns (Regex Tester, and the Sandbox Regex and Find and replace blocks) run in a Worker with a 2 second timeout, so a pathological pattern is stopped with an error instead of stalling the tab.
