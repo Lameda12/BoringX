@@ -729,6 +729,33 @@
     }
   },
   {
+    "slug": "cron",
+    "name": "Cron Explainer",
+    "category": "Convert",
+    "blurb": "Explains a five-field cron expression and lists its next five runs.",
+    "description": "Explain a five-field cron expression and see its next five runs in any IANA time zone, with UTC offsets and daylight saving changes called out.",
+    "keywords": [
+      "cron",
+      "crontab",
+      "schedule",
+      "expression",
+      "next run",
+      "dst"
+    ],
+    "recipe": {
+      "name": "Cron Explainer",
+      "input": "0 9 * * 1-5",
+      "steps": [
+        {
+          "b": "cron",
+          "p": {
+            "tz": "America/Halifax"
+          }
+        }
+      ]
+    }
+  },
+  {
     "slug": "number-base",
     "name": "Number Base",
     "category": "Convert",

@@ -11,8 +11,11 @@ export const meta: ToolMeta = {
   recipe: { name: "Time Zone", input: "2026-03-08 09:00", steps: [{ b: "timezone", p: { from: "America/Halifax", to: "UTC, America/Los_Angeles, Europe/London, Asia/Tokyo" } }] },
 };
 
-function offsetAt(ms: number, tz: string): number {
-  const f = new Intl.DateTimeFormat("en-US", { timeZone: tz, hourCycle: "h23", year: "numeric", month: "numeric", day: "numeric", hour: "numeric", minute: "numeric", second: "numeric" });
+// Building a formatter is far slower than using one, and callers ask thousands of times.
+const formatters = new Map<string, Intl.DateTimeFormat>();
+export function offsetAt(ms: number, tz: string): number {
+  let f = formatters.get(tz);
+  if (!f) formatters.set(tz, (f = new Intl.DateTimeFormat("en-US", { timeZone: tz, hourCycle: "h23", year: "numeric", month: "numeric", day: "numeric", hour: "numeric", minute: "numeric", second: "numeric" })));
   const g: Record<string, number> = {};
   for (const x of f.formatToParts(ms)) if (x.type !== "literal") g[x.type] = Number(x.value);
   return Date.UTC(g.year, g.month - 1, g.day, g.hour, g.minute, g.second) - Math.floor(ms / 1000) * 1000;

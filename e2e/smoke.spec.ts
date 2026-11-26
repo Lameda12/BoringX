@@ -9,7 +9,7 @@ test.describe("home", () => {
   test("filters tools as you type and offers to build when nothing matches", async ({ page }) => {
     await page.goto("/");
     await expect(page.getByRole("heading", { level: 1 })).toContainText("Boring");
-    await expect(page.locator("a.tool-row")).toHaveCount(41); // 40 tools + sandbox
+    await expect(page.locator("a.tool-row")).toHaveCount(42); // 41 tools + sandbox
     await page.locator("#hero-q").fill("pdf");
     await expect(page.locator("a.tool-row")).toHaveCount(5);
     await page.locator("#hero-q").fill("zzqx wibble");
@@ -211,6 +211,25 @@ test("Convert: timestamp, time zone, units, color, base", async ({ page }) => {
   await expect(page.getByRole("img", { name: /Swatch/ })).toBeVisible();
   await page.goto("/number-base");
   await expect(out(page)).toContainText("hex  ff");
+});
+
+test("Convert: cron explainer lists runs, reports errors and opens in the Sandbox", async ({ page }) => {
+  await page.goto("/cron");
+  await expect(out(page)).toContainText("Next 5 runs in America/Halifax");
+  await expect(out(page)).toContainText(/UTC-0[34]:00/);
+  await expect(page.getByText(/minute hour day-of-month month day-of-week/).first()).toBeVisible();
+  const expr = page.locator("textarea.text-in");
+  await expr.fill("61 * * * *");
+  await expect(alert(page)).toContainText("minute must be 0-59");
+  await expr.fill("30 2 * * *");
+  await page.getByLabel("Start after").fill("2027-03-13T00:00:00-04:00");
+  await expect(out(page)).toContainText("Skipped: 2027-03-14 02:30 does not exist");
+  await page.getByLabel("Time zone", { exact: true }).fill("Asia/Tokyo");
+  await expect(out(page)).toContainText("UTC+09:00");
+  await page.getByRole("link", { name: "Take it apart" }).click();
+  await expect(page).toHaveURL(/\/sandbox#r=/);
+  await expect(page.locator(".step-title")).toHaveText(["Cron explainer"]);
+  await expect(out(page)).toContainText("Next 5 runs in Asia/Tokyo");
 });
 
 test("Files: checksum, zip, svg to png, favicon", async ({ page }) => {
