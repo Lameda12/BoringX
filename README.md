@@ -1,6 +1,6 @@
 # BoringX
 
-Small tools that each do one dull job, entirely in your browser. 40 tools, plus a Sandbox for chaining them. No uploads, no accounts, no limits, no watermarks.
+Small tools that each do one dull job, entirely in your browser. 41 tools, plus a Sandbox for chaining them. No uploads, no accounts, no limits, no watermarks.
 
 ![Home](docs/home.png)
 
@@ -16,7 +16,7 @@ Small tools that each do one dull job, entirely in your browser. 40 tools, plus 
 - **Data**: JSON Formatter, CSV to JSON and back, CSV to Excel and back, SQL IN List, JSON to TypeScript
 - **Dev**: Base64, URL Encode/Decode, JWT Decoder, Regex Tester, Hash
 - **Generate**: UUID, Password, QR Code, Filler Text, Placeholder Image
-- **Convert**: Unix Timestamp, Time Zone, Units, Color, Number Base
+- **Convert**: Unix Timestamp, Time Zone, Cron Explainer, Units, Color, Number Base
 - **Files**: Zip and Unzip, File Checksum, OCR, SVG to PNG, Favicon Generator
 
 **Sandbox** (`/sandbox`): input, a stack of blocks, output, live. Reorder, configure, add and remove blocks, add a Custom JavaScript block (runs in an isolated Worker with no network). Name it ("Boring ____"), save it to localStorage, or share it as a URL with the recipe in the hash. Every text and data tool has a **Take it apart** button that opens it in the Sandbox as its blocks.
@@ -51,7 +51,7 @@ Pass `--build-arg SITE_URL=https://your.origin` to `docker build` so the generat
 
 First-use downloads come from your own container, never a third party: OCR fetches roughly 7 MB (one engine plus English data), Remove Background roughly 55 MB (model plus runtime), and Convert to AVIF about 3 MB, only when the browser cannot encode AVIF itself. After first use these are cached by the browser. Offline use needs the service worker, which only runs over HTTPS or on localhost, and only covers pages and assets the visitor has already loaded; the browser may evict cached data. A fresh browser must reach the container once per tool first.
 
-## Adding tool 41
+## Adding a tool
 
 Create `src/tools/<slug>.tsx` exporting `meta`, optionally `blocks`, and a default component. Text and data tools are usually five lines on top of `toolFromRecipe(...)`. `npm run gen` (run automatically before dev and build) rebuilds the registry, routes, search index and sitemap. Run `node scripts/make-og.mjs` to render its OG card.
 
@@ -66,6 +66,7 @@ Create `src/tools/<slug>.tsx` exporting `meta`, optionally `blocks`, and a defau
 
 - PDF Compress is either a lossless tidy-up (modest gains) or a lossy flatten to JPEG pages (text no longer selectable).
 - Remove Background and OCR download their engine from this site on first use (about 45 MB and 15 MB), then work offline. OCR is English only.
+- Cron Explainer takes five fields only (no seconds, `@` shortcuts, `L`, `W`, `#` or `?`). Across clock changes it always skips times that do not exist. A repeated time runs once, or both times if the minute or hour field starts with `*`. Real schedulers differ here.
 - Regex patterns (Regex Tester, and the Sandbox Regex and Find and replace blocks) run in a Worker with a 2 second timeout, so a pathological pattern is stopped with an error instead of stalling the tab.
 - HEIC/GIF/TIFF cannot be stripped losslessly in the browser, so Strip EXIF supports JPEG, PNG and WebP.
 

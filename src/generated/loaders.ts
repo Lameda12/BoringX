@@ -32,6 +32,7 @@ export const loaders: Record<string, () => Promise<{ default: ComponentType }>> 
   "qr-code": () => import("../tools/qr-code"),
   "uuid": () => import("../tools/uuid"),
   "color": () => import("../tools/color"),
+  "cron": () => import("../tools/cron"),
   "number-base": () => import("../tools/number-base"),
   "time-zone": () => import("../tools/time-zone"),
   "units": () => import("../tools/units"),
