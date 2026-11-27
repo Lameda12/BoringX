@@ -43,6 +43,21 @@
     ]
   },
   {
+    "slug": "pdf-organize",
+    "name": "PDF Organize",
+    "category": "PDF",
+    "blurb": "Rotates and reorders pages. Text stays text.",
+    "description": "Rotate and reorder PDF pages in your browser, then export without turning them into images. No upload.",
+    "keywords": [
+      "pdf",
+      "rotate pdf",
+      "reorder pages",
+      "rearrange",
+      "organize",
+      "sideways scan"
+    ]
+  },
+  {
     "slug": "pdf-split",
     "name": "PDF Split",
     "category": "PDF",

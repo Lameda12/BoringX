@@ -95,13 +95,13 @@ describe("custom JS worker core", () => {
 
 describe("tool registry integrity", () => {
   const metas = tools as ToolMeta[];
-  it("ships exactly 40 tools with unique slugs across the 8 categories", () => {
-    expect(metas).toHaveLength(40);
-    expect(new Set(metas.map((m) => m.slug)).size).toBe(40);
-    for (const c of CATEGORIES) expect(metas.filter((m) => m.category === c)).toHaveLength(5);
+  it("ships exactly 41 tools with unique slugs across the 8 categories", () => {
+    expect(metas).toHaveLength(41);
+    expect(new Set(metas.map((m) => m.slug)).size).toBe(41);
+    for (const c of CATEGORIES) expect(metas.filter((m) => m.category === c), c).toHaveLength(c === "PDF" ? 6 : 5);
   });
   it("every tool has unique, useful SEO copy", () => {
-    expect(new Set(metas.map((m) => m.description)).size).toBe(40);
+    expect(new Set(metas.map((m) => m.description)).size).toBe(41);
     metas.forEach((m) => { expect(m.description.length).toBeGreaterThan(40); expect(m.description.length).toBeLessThan(260); expect(m.keywords.length).toBeGreaterThan(2); });
   });
   it("every recipe step references a registered block, and has sample input", () => {
