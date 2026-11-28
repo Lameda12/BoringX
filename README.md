@@ -1,6 +1,6 @@
 # BoringX
 
-Small tools that each do one dull job, entirely in your browser. 40 tools, plus a Sandbox for chaining them. No uploads, no accounts, no limits, no watermarks.
+Small tools that each do one dull job, entirely in your browser. 41 tools, plus a Sandbox for chaining them. No uploads, no accounts, no limits, no watermarks.
 
 Try it: [boringx.vercel.app](https://boringx.vercel.app) for the tool directory, or the [Sandbox](https://boringx.vercel.app/sandbox) to chain tools together. For example, chain **Clean List** → **SQL IN List** to sort a pasted column of IDs and drop case-insensitive duplicates, then get it back as an `IN (...)` clause.
 
@@ -12,7 +12,7 @@ Try it: [boringx.vercel.app](https://boringx.vercel.app) for the tool directory,
 
 ## What is in it
 
-- **PDF**: Merge, Split, Compress, PDF to Images, Images to PDF
+- **PDF**: Merge, Split, Rotate and Reorder, Compress, PDF to Images, Images to PDF
 - **Image**: Compress, Resize and Crop, Convert (PNG/JPG/WebP/AVIF), Remove Background, Strip EXIF
 - **Text**: Word Count, Case Converter, Diff, Clean List, Markdown Preview
 - **Data**: JSON Formatter, CSV to JSON and back, CSV to Excel and back, SQL IN List, JSON to TypeScript
@@ -53,7 +53,7 @@ Pass `--build-arg SITE_URL=https://your.origin` to `docker build` so the generat
 
 First-use downloads come from your own container, never a third party: OCR fetches roughly 7 MB (one engine plus English data), Remove Background roughly 55 MB (model plus runtime), and Convert to AVIF about 3 MB, only when the browser cannot encode AVIF itself. After first use these are cached by the browser. Offline use needs the service worker, which only runs over HTTPS or on localhost, and only covers pages and assets the visitor has already loaded; the browser may evict cached data. A fresh browser must reach the container once per tool first.
 
-## Adding tool 41
+## Adding tool 42
 
 Create `src/tools/<slug>.tsx` exporting `meta`, optionally `blocks`, and a default component. Text and data tools are usually five lines on top of `toolFromRecipe(...)`. `npm run gen` (run automatically before dev and build) rebuilds the registry, routes, search index and sitemap. Run `node scripts/make-og.mjs` to render its OG card.
 

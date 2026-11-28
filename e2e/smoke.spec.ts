@@ -9,9 +9,9 @@ test.describe("home", () => {
   test("filters tools as you type and offers to build when nothing matches", async ({ page }) => {
     await page.goto("/");
     await expect(page.getByRole("heading", { level: 1 })).toContainText("Boring");
-    await expect(page.locator("a.tool-row")).toHaveCount(41); // 40 tools + sandbox
+    await expect(page.locator("a.tool-row")).toHaveCount(42); // 41 tools + sandbox
     await page.locator("#hero-q").fill("pdf");
-    await expect(page.locator("a.tool-row")).toHaveCount(5);
+    await expect(page.locator("a.tool-row")).toHaveCount(6);
     await page.locator("#hero-q").fill("zzqx wibble");
     const build = page.getByRole("link", { name: "Build Boring zzqx wibble" });
     await expect(build).toBeVisible();
@@ -365,7 +365,7 @@ test.describe("trust", () => {
     const csp = res!.headers()["content-security-policy"];
     expect(csp).toContain("connect-src 'self' blob: data:");
     expect(csp).not.toMatch(/https?:\/\//);
-    for (const p of ["/json-formatter", "/pdf-merge", "/sandbox", "/qr-code"]) { await page.goto(p); await page.waitForLoadState("networkidle"); }
+    for (const p of ["/json-formatter", "/pdf-merge", "/pdf-organize", "/sandbox", "/qr-code"]) { await page.goto(p); await page.waitForLoadState("networkidle"); }
     expect(external).toEqual([]);
     const w = await page.request.get("/workers/custom-js.js");
     expect(w.headers()["content-security-policy"]).toContain("connect-src 'none'");

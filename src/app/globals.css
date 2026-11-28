@@ -138,6 +138,9 @@ input[type="range"] { width: 100%; accent-color: var(--blue); min-height: 32px; 
 .thumbs { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
 .thumb { margin: 0; border: 1px solid var(--rule); background: var(--paper); padding: 6px; display: grid; gap: 6px; }
 .thumb img, .preview-img, .compare img { max-width: 100%; height: auto; display: block; border: 1px solid var(--rule); }
+.page-list { list-style: none; margin: 0; padding: 0; }
+.page-box { aspect-ratio: 1; display: grid; grid-template: minmax(0, 1fr) / minmax(0, 1fr); place-items: center; overflow: hidden; }
+.page-box img { max-height: 100%; width: auto; }
 .compare { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
 .compare figure { margin: 0; display: grid; gap: 4px; } .compare figcaption { font-size: 13px; color: var(--muted); font-family: var(--mono); }
 .checker { background: conic-gradient(#bbb 25%, #eee 0 50%, #bbb 0 75%, #eee 0) 0 0 / 16px 16px; }
