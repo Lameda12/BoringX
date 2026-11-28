@@ -83,6 +83,15 @@ test("Image: strip EXIF from a real JPEG with GPS", async ({ page }) => {
   await expect(page.locator(".stat-v", { hasText: "EXIF" })).toBeVisible();
 });
 
+test("Text: case converter splits acronym boundaries", async ({ page }) => {
+  await page.goto("/case-converter");
+  await page.locator("textarea").first().fill("XMLHttpRequest");
+  await page.getByLabel("Case", { exact: true }).selectOption("snake");
+  await expect(out(page)).toHaveText("xml_http_request");
+  await page.getByLabel("Case", { exact: true }).selectOption("kebab");
+  await expect(out(page)).toHaveText("xml-http-request");
+});
+
 test("Text: case converter and take it apart", async ({ page }) => {
   await page.goto("/case-converter");
   await expect(out(page)).toContainText("The Quick Brown Fox");
