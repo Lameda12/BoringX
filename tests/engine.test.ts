@@ -1,3 +1,4 @@
+import { installWorkerShim } from "./helpers/node-worker";
 import { describe, expect, it } from "vitest";
 import fs from "node:fs";
 import vm from "node:vm";
@@ -12,6 +13,9 @@ import { md5 } from "@/lib/md5";
 import { stripImage, stripJpeg, readExif } from "@/lib/exif";
 import { buildIco } from "@/tools/favicon-generator";
 import { jsonToTs } from "@/tools/json-to-typescript";
+import { convertCase } from "@/tools/case-converter";
+
+installWorkerShim();
 
 describe("pipeline", () => {
   it("runs steps in order and passes output along", async () => {
@@ -61,6 +65,15 @@ describe("recipe links", () => {
     const back = await decodeRecipe(await encodeRecipe(r));
     expect((await runPipeline(back.input, back.steps, blockById)).output).toBe("a\nb\nc");
   });
+  it("a timestamp recipe keeps its selected input unit through a link", async () => {
+    const r = { name: "t", input: "86400000", steps: [{ b: "timestamp", p: { tz: "UTC", unit: "milliseconds" } }] };
+    const back = await decodeRecipe(await encodeRecipe(r));
+    expect(back.steps[0].p.unit).toBe("milliseconds");
+    expect((await runPipeline(back.input, back.steps, blockById)).output).toContain("1970-01-02T00:00:00.000Z");
+    // links made before the unit existed still work and keep the old (auto) reading
+    const old = { name: "t", input: "86400000", steps: [{ b: "timestamp", p: { tz: "UTC" } }] };
+    expect((await runPipeline(old.input, old.steps, blockById)).output).toContain("1972-09-27T00:00:00.000Z");
+  });
 });
 
 describe("custom JS worker core", () => {
@@ -83,13 +96,13 @@ describe("custom JS worker core", () => {
 
 describe("tool registry integrity", () => {
   const metas = tools as ToolMeta[];
-  it("ships exactly 40 tools with unique slugs across the 8 categories", () => {
-    expect(metas).toHaveLength(40);
-    expect(new Set(metas.map((m) => m.slug)).size).toBe(40);
-    for (const c of CATEGORIES) expect(metas.filter((m) => m.category === c)).toHaveLength(5);
+  it("ships exactly 41 tools with unique slugs across the 8 categories", () => {
+    expect(metas).toHaveLength(41);
+    expect(new Set(metas.map((m) => m.slug)).size).toBe(41);
+    for (const c of CATEGORIES) expect(metas.filter((m) => m.category === c), c).toHaveLength(c === "PDF" ? 6 : 5);
   });
   it("every tool has unique, useful SEO copy", () => {
-    expect(new Set(metas.map((m) => m.description)).size).toBe(40);
+    expect(new Set(metas.map((m) => m.description)).size).toBe(41);
     metas.forEach((m) => { expect(m.description.length).toBeGreaterThan(40); expect(m.description.length).toBeLessThan(260); expect(m.keywords.length).toBeGreaterThan(2); });
   });
   it("every recipe step references a registered block, and has sample input", () => {
@@ -218,5 +231,70 @@ describe("json-to-ts edge cases", () => {
     expect(o).toContain('"a-b": number;');
     expect(o).toContain("e: unknown[];");
     expect(o).toMatch(/u: \(U | string\)\[\]|u: \(.*\)\[\]/);
+  });
+  it("reserves the requested name for an array root and names elements separately", () => {
+    const o = jsonToTs('[{"a":{"x":1}},{"a":{"y":2}},{"a":null}]', "Root");
+    expect(o).toContain("export type Root = RootItem[];");
+    expect(o).toContain("export interface RootItem {");
+    expect(o).not.toContain("Root2");
+  });
+  it("keeps the public name for object roots", () => {
+    const o = jsonToTs('{"a":1,"root":{"b":2}}', "Root");
+    expect(o).toContain("export interface Root {");
+    expect(o).toContain("  a: number;");
+    expect(o).toContain("root: Root2;");
+  });
+  it("names nested collisions deterministically", () => {
+    const j = '[{"item":{"x":1},"RootItem":{"y":2}}]';
+    expect(jsonToTs(j, "Root")).toBe(jsonToTs(j, "Root"));
+    const o = jsonToTs(j, "Root");
+    expect(o).toBe([
+      "export type Root = RootItem[];",
+      "export interface RootItem {\n  item: Item;\n  RootItem: RootItem2;\n}",
+      "export interface RootItem2 {\n  y: number;\n}",
+      "export interface Item {\n  x: number;\n}",
+    ].join("\n\n"));
+  });
+  it("handles nested array roots, readonly and a key named like the root", () => {
+    expect(jsonToTs('[[{"a":1}]]', "Root")).toContain("export type Root = RootItem[][];");
+    const o = jsonToTs('[{"root":{"b":1}}]', "Root", false, true);
+    expect(o).toContain("type Root = RootItem[];");
+    expect(o).toContain("readonly root: Root2;");
+  });
+  it("handles primitive and empty array roots", () => {
+    expect(jsonToTs("5", "Root")).toBe("export type Root = number;");
+    expect(jsonToTs("[]", "Root")).toBe("export type Root = unknown[];");
+    expect(jsonToTs("[1,2]", "Root")).toBe("export type Root = number[];");
+  });
+});
+
+describe("case converter identifier boundaries", () => {
+  it("splits acronym boundaries", () => {
+    expect(convertCase("XMLHttpRequest", "snake")).toBe("xml_http_request");
+    expect(convertCase("XMLHttpRequest", "kebab")).toBe("xml-http-request");
+    expect(convertCase("XMLHttpRequest", "camel")).toBe("xmlHttpRequest");
+    expect(convertCase("XMLHttpRequest", "pascal")).toBe("XmlHttpRequest");
+    expect(convertCase("XMLHttpRequest", "constant")).toBe("XML_HTTP_REQUEST");
+    expect(convertCase("parseHTMLString", "snake")).toBe("parse_html_string");
+  });
+  it("keeps existing behavior", () => {
+    expect(convertCase("helloWorld", "snake")).toBe("hello_world");
+    expect(convertCase("HTML", "snake")).toBe("html");
+    expect(convertCase("userID", "snake")).toBe("user_id");
+    expect(convertCase("version2Beta", "snake")).toBe("version2_beta");
+  });
+  it("leaves non-Latin text intact", () => {
+    expect(convertCase("Қазақ тілі", "snake")).toBe("қазақ_тілі");
+    expect(convertCase("Қазақ тілі", "kebab")).toBe("қазақ-тілі");
+    expect(convertCase("helloМир", "snake")).toBe("hello_мир");
+    expect(convertCase("ҚазақТілі", "snake")).toBe("қазақ_тілі");
+    expect(convertCase("Қазақ тілі", "camel")).toBe("қазақТілі");
+    expect(convertCase("Қазақ тілі", "pascal")).toBe("ҚазақТілі");
+    expect(convertCase("Қазақ тілі", "constant")).toBe("ҚАЗАҚ_ТІЛІ");
+    expect(convertCase("Қазақ тілі", "upper")).toBe("ҚАЗАҚ ТІЛІ");
+  });
+  it("handles digits next to acronyms", () => {
+    expect(convertCase("HTTP2Server", "snake")).toBe("http2_server");
+    expect(convertCase("getHTTP2Response", "snake")).toBe("get_http2_response");
   });
 });

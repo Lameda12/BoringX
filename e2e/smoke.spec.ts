@@ -9,9 +9,9 @@ test.describe("home", () => {
   test("filters tools as you type and offers to build when nothing matches", async ({ page }) => {
     await page.goto("/");
     await expect(page.getByRole("heading", { level: 1 })).toContainText("Boring");
-    await expect(page.locator("a.tool-row")).toHaveCount(41); // 40 tools + sandbox
+    await expect(page.locator("a.tool-row")).toHaveCount(42); // 41 tools + sandbox
     await page.locator("#hero-q").fill("pdf");
-    await expect(page.locator("a.tool-row")).toHaveCount(5);
+    await expect(page.locator("a.tool-row")).toHaveCount(6);
     await page.locator("#hero-q").fill("zzqx wibble");
     const build = page.getByRole("link", { name: "Build Boring zzqx wibble" });
     await expect(build).toBeVisible();
@@ -83,6 +83,15 @@ test("Image: strip EXIF from a real JPEG with GPS", async ({ page }) => {
   await expect(page.locator(".stat-v", { hasText: "EXIF" })).toBeVisible();
 });
 
+test("Text: case converter splits acronym boundaries", async ({ page }) => {
+  await page.goto("/case-converter");
+  await page.locator("textarea").first().fill("XMLHttpRequest");
+  await page.getByLabel("Case", { exact: true }).selectOption("snake");
+  await expect(out(page)).toHaveText("xml_http_request");
+  await page.getByLabel("Case", { exact: true }).selectOption("kebab");
+  await expect(out(page)).toHaveText("xml-http-request");
+});
+
 test("Text: case converter and take it apart", async ({ page }) => {
   await page.goto("/case-converter");
   await expect(out(page)).toContainText("The Quick Brown Fox");
@@ -111,12 +120,18 @@ test("Data: JSON formatter explains errors, CSV converts both ways", async ({ pa
   await expect(alert(page)).toContainText(/Invalid JSON at line 1, column \d+/);
   await page.goto("/csv-json");
   await expect(out(page)).toContainText('"city": "New York, NY"');
+  await expect(out(page)).toContainText('"id": "001"');
+  await page.getByLabel("Convert numbers and booleans").check();
+  await expect(out(page)).toContainText('"id": 1,');
   await page.getByRole("tab", { name: "JSON to CSV" }).click();
   await expect(out(page)).toContainText("id,name");
   await page.goto("/sql-in-list");
   await expect(out(page)).toHaveText("id IN (1001, 1002, 1003, 1004)");
   await page.goto("/json-to-typescript");
   await expect(out(page)).toContainText("export interface Root");
+  await page.getByLabel("JSON sample", { exact: true }).fill('[{"a":{"x":1}},{"a":{"y":2}},{"a":null}]');
+  await expect(out(page)).toContainText("export type Root = RootItem[];");
+  await expect(out(page)).not.toContainText("Root2");
 });
 
 test("Data: CSV to Excel builds an xlsx and reads it back", async ({ page }) => {
@@ -143,6 +158,22 @@ test("Dev: base64, jwt, regex, hash", async ({ page }) => {
   await expect(out(page)).toContainText("https%3A%2F%2Fexample.com");
 });
 
+test("Regex Tester: a pathological pattern is stopped and the page stays usable", async ({ page }) => {
+  await page.goto("/regex-tester");
+  await expect(out(page)).toContainText("3 matches");
+  await page.getByLabel("Pattern", { exact: true }).fill("(a+)+$");
+  await page.getByLabel("Flags", { exact: true }).fill("");
+  await page.locator("textarea.text-in").fill("a".repeat(45) + "b");
+  // the main thread is free: typing elsewhere responds while the worker is busy
+  await page.getByLabel("Replacement").fill("still responsive");
+  await expect(page.getByLabel("Replacement")).toHaveValue("still responsive");
+  await expect(alert(page).first()).toContainText("Regex block ran longer than 2s and was stopped", { timeout: 8000 });
+  // a valid pattern works again without reloading
+  await page.getByLabel("Pattern", { exact: true }).fill("a+");
+  await expect(alert(page)).toHaveCount(0);
+  await expect(out(page)).toContainText("1 match");
+});
+
 test("Generate: uuid, password, qr, filler, placeholder", async ({ page }) => {
   await page.goto("/uuid");
   await expect(out(page)).toHaveText(/^([0-9a-f-]{36}\n){4}[0-9a-f-]{36}$/);
@@ -159,9 +190,30 @@ test("Generate: uuid, password, qr, filler, placeholder", async ({ page }) => {
   await expect(page.locator("img.preview-img")).toBeVisible();
 });
 
+test("Password: opens on settings and results, no input panel; still works in Sandbox", async ({ page }) => {
+  await page.goto("/password");
+  await expect(page.getByRole("heading", { name: "Settings" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Passwords" })).toBeVisible();
+  await expect(page.getByText("Input (ignored)")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Paste" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Clear" })).toHaveCount(0);
+  await expect(page.getByText("Load file")).toHaveCount(0);
+  await expect(out(page)).toHaveText(/^(\S{20}\n){2}\S{20}$/);
+  const link = page.getByRole("link", { name: "Take it apart" });
+  await expect(link).toHaveAttribute("href", /\/sandbox#r=/);
+  await link.click();
+  await expect(page).toHaveURL(/\/sandbox#r=/);
+  await expect(page.getByTestId("output")).toHaveText(/^(\S{20}\n){2}\S{20}$/);
+});
+
 test("Convert: timestamp, time zone, units, color, base", async ({ page }) => {
   await page.goto("/unix-timestamp");
   await expect(out(page)).toContainText("2023-11-14T22:13:20.000Z");
+  await expect(out(page)).toContainText("read as: seconds (auto)");
+  await page.getByLabel("Input unit").selectOption("milliseconds");
+  await page.getByLabel(/Timestamps or dates/).fill("86400000");
+  await expect(out(page)).toContainText("1970-01-02T00:00:00.000Z");
+  await expect(out(page)).toContainText("read as: milliseconds");
   await expect(page.getByText(/Supported: epoch seconds or milliseconds/)).toBeVisible();
   await page.getByLabel("Timestamps or dates, one per line").fill("2026-02-30\n2024-02-29");
   await expect(out(page)).toContainText("is not a real date");
@@ -176,6 +228,20 @@ test("Convert: timestamp, time zone, units, color, base", async ({ page }) => {
   await expect(page.getByRole("img", { name: /Swatch/ })).toBeVisible();
   await page.goto("/number-base");
   await expect(out(page)).toContainText("hex  ff");
+});
+
+test("Time zone: DST gap is reported, repeated hour offers both, policy survives a sandbox link", async ({ page }) => {
+  await page.goto("/time-zone");
+  const input = page.getByLabel("Date and time in the source zone");
+  await input.fill("2026-03-08 02:30\n2026-11-01 01:30");
+  await expect(out(page)).toContainText("Nonexistent local time");
+  await expect(out(page)).toContainText("ambiguous");
+  await expect(out(page)).toContainText("UTC-03:00");
+  await expect(out(page)).toContainText("UTC-04:00");
+  const r = { name: "", input: "2026-11-01 01:30", steps: [{ b: "timezone", p: { from: "America/Halifax", to: "UTC", ambiguous: "later" } }] };
+  await page.goto("/sandbox#r=p." + Buffer.from(JSON.stringify(r)).toString("base64url"));
+  await expect(out(page)).toContainText("2026-11-01 05:30:00");
+  await expect(out(page)).not.toContainText("04:30:00");
 });
 
 test("Files: checksum, zip, svg to png, favicon", async ({ page }) => {
@@ -243,6 +309,16 @@ test.describe("sandbox", () => {
     await expect(alert(page).first()).toContainText("ran longer than 2s", { timeout: 8000 });
   });
 
+  test("regex blocks are stopped on a pathological pattern, then recover", async ({ page }) => {
+    await page.goto("/sandbox#r=" + await page.evaluate(async () => {
+      const r = { name: "", input: "a".repeat(45) + "b", steps: [{ b: "replace", p: { find: "(a+)+$", with: "x", regex: true } }] };
+      return "p." + btoa(JSON.stringify(r)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+    }));
+    await expect(alert(page).first()).toContainText("Find and replace block ran longer than 2s and was stopped", { timeout: 8000 });
+    await page.getByLabel("Find", { exact: true }).fill("a+");
+    await expect(alert(page)).toHaveCount(0, { timeout: 8000 });
+  });
+
   test("name, save, share link opens and runs in a fresh browser context", async ({ page, browser }) => {
     await page.goto("/sandbox");
     await page.getByLabel(/Tool name/).fill("Fruit Fixer");
@@ -253,6 +329,9 @@ test.describe("sandbox", () => {
     await page.getByRole("button", { name: "Open", exact: true }).click();
     await expect(page.getByLabel(/Tool name/)).toHaveValue("Fruit Fixer");
     await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
+    // Input is not shared unless the user opts in.
+    const includeInput = page.getByLabel("Include input in link");
+    await expect(includeInput).not.toBeChecked();
     await page.getByRole("button", { name: "Copy share link" }).click();
     const link = await page.evaluate(() => navigator.clipboard.readText());
     expect(link).toMatch(/\/sandbox#r=z\./);
@@ -260,8 +339,26 @@ test.describe("sandbox", () => {
     const p2 = await ctx.newPage();
     await p2.goto(link);
     await expect(p2.getByLabel(/Tool name/)).toHaveValue("Fruit Fixer");
-    await expect(p2.getByTestId("output")).toContainText("fruit IN ('APPLE', 'BANANA', 'CHERRY', 'DATE')");
+    await expect(p2.getByLabel("Input", { exact: true })).toHaveValue("");
+    await expect(page.getByText(/Recipients start with an empty input/)).toBeVisible();
+    await expect(p2.getByTestId("output")).toBeVisible();
+    await expect(p2.getByTestId("output")).not.toContainText("APPLE");
     await ctx.close();
+
+    // Opting in shares the input and says what recipients receive.
+    await includeInput.check();
+    await expect(page.getByText(/anyone who has the link can read it/i)).toBeVisible();
+    await expect(page.getByText(/not uploaded to a server/i)).toBeVisible();
+    await expect.poll(async () => {
+      await page.getByRole("button", { name: "Copy share link" }).click();
+      return (await page.evaluate(() => navigator.clipboard.readText())).length;
+    }).toBeGreaterThan(link.length);
+    const link2 = await page.evaluate(() => navigator.clipboard.readText());
+    const ctx2 = await browser.newContext();
+    const p3 = await ctx2.newPage();
+    await p3.goto(link2);
+    await expect(p3.getByTestId("output")).toContainText("fruit IN ('APPLE', 'BANANA', 'CHERRY', 'DATE')");
+    await ctx2.close();
   });
 });
 
@@ -273,7 +370,7 @@ test.describe("trust", () => {
     const csp = res!.headers()["content-security-policy"];
     expect(csp).toContain("connect-src 'self' blob: data:");
     expect(csp).not.toMatch(/https?:\/\//);
-    for (const p of ["/json-formatter", "/pdf-merge", "/sandbox", "/qr-code"]) { await page.goto(p); await page.waitForLoadState("networkidle"); }
+    for (const p of ["/json-formatter", "/pdf-merge", "/pdf-organize", "/sandbox", "/qr-code"]) { await page.goto(p); await page.waitForLoadState("networkidle"); }
     expect(external).toEqual([]);
     const w = await page.request.get("/workers/custom-js.js");
     expect(w.headers()["content-security-policy"]).toContain("connect-src 'none'");

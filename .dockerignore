@@ -1,0 +1,16 @@
+node_modules
+.next
+out
+.git
+.github
+test-results
+playwright-report
+.vercel
+.lighthouse
+.hallmark
+*.tsbuildinfo
+next-env.d.ts
+public/imgly
+public/tesseract
+public/codecs
+public/pdf.worker.min.mjs

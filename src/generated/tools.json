@@ -43,6 +43,21 @@
     ]
   },
   {
+    "slug": "pdf-organize",
+    "name": "PDF Organize",
+    "category": "PDF",
+    "blurb": "Rotates and reorders pages. Text stays text.",
+    "description": "Rotate and reorder PDF pages in your browser, then export without turning them into images. No upload.",
+    "keywords": [
+      "pdf",
+      "rotate pdf",
+      "reorder pages",
+      "rearrange",
+      "organize",
+      "sideways scan"
+    ]
+  },
+  {
     "slug": "pdf-split",
     "name": "PDF Split",
     "category": "PDF",
@@ -317,14 +332,14 @@
     ],
     "recipe": {
       "name": "CSV to JSON",
-      "input": "id,name,city\n1,Ada,London\n2,Grace,\"New York, NY\"\n3,Linus,Helsinki",
+      "input": "id,name,city\n001,Ada,London\n002,Grace,\"New York, NY\"\n003,Linus,Helsinki",
       "steps": [
         {
           "b": "csv-to-json",
           "p": {
             "header": true,
             "delimiter": "",
-            "types": true
+            "types": false
           }
         }
       ]

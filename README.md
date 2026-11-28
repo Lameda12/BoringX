@@ -1,6 +1,8 @@
 # BoringX
 
-Small tools that each do one dull job, entirely in your browser. 40 tools, plus a Sandbox for chaining them. No uploads, no accounts, no limits, no watermarks.
+Small tools that each do one dull job, entirely in your browser. 41 tools, plus a Sandbox for chaining them. No uploads, no accounts, no limits, no watermarks.
+
+Try it: [boringx.vercel.app](https://boringx.vercel.app) for the tool directory, or the [Sandbox](https://boringx.vercel.app/sandbox) to chain tools together. For example, chain **Clean List** → **SQL IN List** to sort a pasted column of IDs and drop case-insensitive duplicates, then get it back as an `IN (...)` clause.
 
 ![Home](docs/home.png)
 
@@ -10,7 +12,7 @@ Small tools that each do one dull job, entirely in your browser. 40 tools, plus 
 
 ## What is in it
 
-- **PDF**: Merge, Split, Compress, PDF to Images, Images to PDF
+- **PDF**: Merge, Split, Rotate and Reorder, Compress, PDF to Images, Images to PDF
 - **Image**: Compress, Resize and Crop, Convert (PNG/JPG/WebP/AVIF), Remove Background, Strip EXIF
 - **Text**: Word Count, Case Converter, Diff, Clean List, Markdown Preview
 - **Data**: JSON Formatter, CSV to JSON and back, CSV to Excel and back, SQL IN List, JSON to TypeScript
@@ -38,7 +40,20 @@ npm run test:e2e   # Playwright smoke tests (build first)
 
 Node 20+. Playwright uses `/opt/pw-browsers/chromium` if present, else its own browser (`npx playwright install chromium`).
 
-## Adding tool 41
+## Self-hosting with Docker
+
+```bash
+docker build -t boringx .
+docker run --rm -p 4173:4173 boringx   # http://localhost:4173
+```
+
+The image runs `npm ci` and `npm run build` (which copies the OCR data, the background-removal model and the AVIF encoder into the export), then serves `out/` with `scripts/serve.mjs`. That server applies the route-specific headers from `vercel.json`: the default Content-Security-Policy (`connect-src 'self' blob: data:`, so the browser refuses requests to other hosts), the stricter policy on `/workers/*` (`default-src 'none'`, `connect-src 'none'`) that confines the Custom JavaScript Worker, and the looser one on `/remove-background` (`'unsafe-eval'` for the ONNX runtime). A plain static container (nginx, `python -m http.server`) would omit these and weaken the privacy guarantee, so keep this server or reproduce those headers at your proxy. Terminate TLS in front of it; service workers and some browser APIs need HTTPS outside localhost.
+
+Pass `--build-arg SITE_URL=https://your.origin` to `docker build` so the generated sitemap uses your origin (the default is the hosted site). Use `docker run --restart unless-stopped` for a long-running deployment.
+
+First-use downloads come from your own container, never a third party: OCR fetches roughly 7 MB (one engine plus English data), Remove Background roughly 55 MB (model plus runtime), and Convert to AVIF about 3 MB, only when the browser cannot encode AVIF itself. After first use these are cached by the browser. Offline use needs the service worker, which only runs over HTTPS or on localhost, and only covers pages and assets the visitor has already loaded; the browser may evict cached data. A fresh browser must reach the container once per tool first.
+
+## Adding tool 42
 
 Create `src/tools/<slug>.tsx` exporting `meta`, optionally `blocks`, and a default component. Text and data tools are usually five lines on top of `toolFromRecipe(...)`. `npm run gen` (run automatically before dev and build) rebuilds the registry, routes, search index and sitemap. Run `node scripts/make-og.mjs` to render its OG card.
 
@@ -53,7 +68,7 @@ Create `src/tools/<slug>.tsx` exporting `meta`, optionally `blocks`, and a defau
 
 - PDF Compress is either a lossless tidy-up (modest gains) or a lossy flatten to JPEG pages (text no longer selectable).
 - Remove Background and OCR download their engine from this site on first use (about 45 MB and 15 MB), then work offline. OCR is English only.
-- Regex Tester runs on the main thread; a pathological pattern can stall the tab.
+- Regex patterns (Regex Tester, and the Sandbox Regex and Find and replace blocks) run in a Worker with a 2 second timeout, so a pathological pattern is stopped with an error instead of stalling the tab.
 - HEIC/GIF/TIFF cannot be stripped losslessly in the browser, so Strip EXIF supports JPEG, PNG and WebP.
 
 MIT licensed.

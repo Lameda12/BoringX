@@ -12,8 +12,8 @@ import { ParamControls } from "./ParamControls";
  * "Take it apart" opens the same recipe, with current input and settings, in the Sandbox.
  */
 export function BlockTool({
-  recipe, blocks, inputLabel = "Input", inputHint, outputLabel = "Result", outputName = "result.txt", acceptFile, inputRows = 10, renderOutput, extra,
-}: { renderOutput?: (out: string) => ReactNode; extra?: (out: string) => ReactNode; recipe: Recipe; blocks: BlockDef[]; inputLabel?: string; inputHint?: string; outputLabel?: string; outputName?: string; acceptFile?: string; inputRows?: number }) {
+  recipe, blocks, inputLabel = "Input", inputHint, outputLabel = "Result", outputName = "result.txt", acceptFile, inputRows = 10, hideInput = false, renderOutput, extra,
+}: { renderOutput?: (out: string) => ReactNode; extra?: (out: string) => ReactNode; recipe: Recipe; blocks: BlockDef[]; inputLabel?: string; inputHint?: string; outputLabel?: string; outputName?: string; acceptFile?: string; inputRows?: number; /** Generator tools ignore their input; omit the panel (the block keeps working in Sandbox). */ hideInput?: boolean }) {
   const hintId = useId();
   const lookup = useMemo(() => new Map(blocks.map((b) => [b.id, b])), [blocks]);
   const [input, setInput] = useState(recipe.input);
@@ -43,7 +43,7 @@ export function BlockTool({
 
   return (
     <div className="stack">
-      <section className="panel">
+      {!hideInput && <section className="panel">
         <header className="panel-head">
           <h2>{inputLabel}</h2>
           <div className="panel-actions">
@@ -62,7 +62,7 @@ export function BlockTool({
           value={input} onChange={(e) => setInput(e.target.value)}
         />
         {inputHint && <p id={hintId} className="input-hint">{inputHint}</p>}
-      </section>
+      </section>}
 
       {steps.some((s) => lookup.get(s.b)!.params.length) && (
         <section className="panel">

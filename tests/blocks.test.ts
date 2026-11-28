@@ -1,6 +1,9 @@
+import { installWorkerShim } from "./helpers/node-worker";
 import { describe, expect, it } from "vitest";
 import { allBlocks, blockById } from "@/engine/registry";
 import { defaultParams, type Params } from "@/engine/types";
+
+installWorkerShim();
 
 async function run(id: string, input: string, params: Params = {}) {
   const b = blockById(id);
@@ -61,11 +64,20 @@ describe("data blocks", () => {
     await fails("json-format", "   ", {}, /Nothing to format/);
   });
   it("csv-to-json and json-to-csv", async () => {
-    const j = JSON.parse(await run("csv-to-json", 'id,name\n1,"Smith, A"\n2,B'));
+    const j = JSON.parse(await run("csv-to-json", 'id,name\n1,"Smith, A"\n2,B', { types: true }));
     expect(j).toEqual([{ id: 1, name: "Smith, A" }, { id: 2, name: "B" }]);
     expect(JSON.parse(await run("csv-to-json", "a;b\n1;2", { delimiter: ";", types: false }))).toEqual([{ a: "1", b: "2" }]);
     expect(await run("json-to-csv", '[{"a":1,"b":"x,y"},{"a":2,"b":"z"}]')).toBe('a,b\n1,"x,y"\n2,z');
     await fails("json-to-csv", "[1,2]", {}, /array of objects/);
+  });
+  it("csv-to-json keeps strings by default and converts only when asked", async () => {
+    const csv = "id,qty,ok\n001,5,true\n0042,7,false";
+    expect(JSON.parse(await run("csv-to-json", csv))).toEqual([{ id: "001", qty: "5", ok: "true" }, { id: "0042", qty: "7", ok: "false" }]);
+    expect(JSON.parse(await run("csv-to-json", csv, { types: true }))).toEqual([{ id: 1, qty: 5, ok: true }, { id: 42, qty: 7, ok: false }]);
+    const types = blockById("csv-to-json")!.params!.find((d) => d.key === "types")!;
+    expect(types.default).toBe(false);
+    expect(types.help).toMatch(/identifier/i);
+    expect(types.help).toMatch(/leading zero/i);
   });
   it("csv-to-xlsx and xlsx-to-csv roundtrip", async () => {
     const b64 = await run("csv-to-xlsx", "a,b\n1,2\n3,4");
@@ -208,12 +220,74 @@ describe("convert blocks", () => {
     expect(await run("timestamp", "2026-01-31 09:30:00.5+02:00", { tz: "UTC" })).toContain("2026-01-31T07:30:00.500Z");
     expect(await run("timestamp", "2026-01-31t09:30:00z", { tz: "UTC" })).toContain("2026-01-31T09:30:00.000Z");
   });
+  it("timestamp input unit", async () => {
+    const ms = await run("timestamp", "86400000", { tz: "UTC", unit: "milliseconds" });
+    expect(ms).toContain("ISO UTC:  1970-01-02T00:00:00.000Z");
+    expect(ms).toContain("read as:  milliseconds");
+    const sec = await run("timestamp", "86400000", { tz: "UTC", unit: "seconds" });
+    expect(sec).toContain("ISO UTC:  1972-09-27T00:00:00.000Z");
+    expect(sec).toContain("read as:  seconds");
+    // seconds mode must not auto-switch for large values
+    expect(await run("timestamp", "1700000000000", { tz: "UTC", unit: "seconds" })).toContain("ISO UTC:  +055840-11-08T22:13:20.000Z");
+    // auto keeps the old heuristic and labels its choice
+    const a1 = await run("timestamp", "86400000", { tz: "UTC" });
+    expect(a1).toContain("1972-09-27T00:00:00.000Z");
+    expect(a1).toContain("read as:  seconds (auto)");
+    expect(await run("timestamp", "1700000000000", { tz: "UTC", unit: "auto" })).toContain("read as:  milliseconds (auto)");
+    // dates and "now" are not numeric: no unit label
+    expect(await run("timestamp", "2026-01-01T00:00:00Z", { tz: "UTC", unit: "milliseconds" })).not.toContain("read as:");
+    expect(await run("timestamp", "now", { tz: "UTC" })).not.toContain("read as:");
+    await fails("timestamp", "0", { tz: "UTC", unit: "days" }, /unit/i);
+  });
   it("timezone (with DST)", async () => {
     const o = await run("timezone", "2026-03-08 09:00", { from: "America/Halifax", to: "UTC, Asia/Tokyo" });
     expect(o).toMatch(/UTC\s+2026-03-08 12:00:00/); // DST began 2:00 that morning, so Halifax is UTC-3
     expect(o).toMatch(/Asia\/Tokyo\s+2026-03-08 21:00:00/);
     expect(await run("timezone", "2026-03-07 09:00", { from: "America/Halifax", to: "UTC" })).toMatch(/2026-03-07 13:00:00/); // day before DST: UTC-4
     await fails("timezone", "x", { from: "Nope/Zone" }, /not a time zone/);
+  });
+  it("timezone reports nonexistent local times in the spring gap", async () => {
+    const o = await run("timezone", "2026-03-08 02:30", { from: "America/Halifax", to: "UTC" });
+    expect(o).toMatch(/Nonexistent local time/);
+    expect(o).not.toMatch(/UTC\s+2026-03-08 \d\d:/);
+    expect(await run("timezone", "2026-03-08 01:59", { from: "America/Halifax", to: "UTC" })).toMatch(/UTC\s+2026-03-08 05:59:00/);
+    expect(await run("timezone", "2026-03-08 03:00", { from: "America/Halifax", to: "UTC" })).toMatch(/UTC\s+2026-03-08 06:00:00/);
+    expect(await run("timezone", "2026-03-08 02:30", { from: "UTC", to: "UTC" })).toMatch(/UTC\s+2026-03-08 02:30:00/);
+  });
+  it("timezone exposes both offsets for the repeated autumn hour", async () => {
+    const o = await run("timezone", "2026-11-01 01:30", { from: "America/Halifax", to: "UTC" });
+    expect(o).toMatch(/ambiguous/);
+    expect(o).toMatch(/Earlier \(UTC-03:00\)\s+UTC\s+2026-11-01 04:30:00/);
+    expect(o).toMatch(/Later \(UTC-04:00\)\s+UTC\s+2026-11-01 05:30:00/);
+    const e = await run("timezone", "2026-11-01 01:30", { from: "America/Halifax", to: "UTC", ambiguous: "earlier" });
+    expect(e).toMatch(/UTC\s+2026-11-01 04:30:00/);
+    expect(e).not.toMatch(/05:30/);
+    const l = await run("timezone", "2026-11-01 01:30", { from: "America/Halifax", to: "UTC", ambiguous: "later" });
+    expect(l).toMatch(/UTC\s+2026-11-01 05:30:00/);
+    expect(l).not.toMatch(/04:30/);
+    expect(await run("timezone", "2026-11-01 00:59", { from: "America/Halifax", to: "UTC" })).not.toMatch(/ambiguous/);
+    expect(await run("timezone", "2026-11-01 02:00", { from: "America/Halifax", to: "UTC" })).toMatch(/UTC\s+2026-11-01 06:00:00/);
+  });
+  it("timezone date-only input still converts when midnight is skipped", async () => {
+    const o = await run("timezone", "2018-11-04", { from: "America/Sao_Paulo", to: "UTC" });
+    expect(o).not.toMatch(/Nonexistent/);
+    expect(o).toMatch(/UTC\s+2018-11-04 03:00:00/);
+    expect(await run("timezone", "2018-11-04 00:30", { from: "America/Sao_Paulo", to: "UTC" })).toMatch(/Nonexistent/);
+  });
+  it("timezone handles half-hour DST zones and mixed lines", async () => {
+    // Lord Howe: 30 minute shift, gap 02:00-02:30 on 2026-10-04, overlap 01:30-02:00 on 2026-04-05
+    expect(await run("timezone", "2026-10-04 02:15", { from: "Australia/Lord_Howe", to: "UTC" })).toMatch(/Nonexistent/);
+    expect(await run("timezone", "2026-04-05 01:45", { from: "Australia/Lord_Howe", to: "UTC" })).toMatch(/ambiguous/);
+    const o = await run("timezone", "2026-03-08 02:30\n2026-07-01 12:00", { from: "America/Halifax", to: "UTC" });
+    expect(o).toMatch(/Nonexistent/);
+    expect(o).toMatch(/UTC\s+2026-07-01 15:00:00/);
+  });
+  it("timezone ambiguity policy survives sandbox share links", async () => {
+    const { encodeRecipe, decodeRecipe } = await import("@/engine/recipe");
+    const r = { name: "t", input: "2026-11-01 01:30", steps: [{ b: "timezone", p: { from: "America/Halifax", to: "UTC", ambiguous: "later" } }] };
+    const back = await decodeRecipe(await encodeRecipe(r));
+    expect(back.steps[0].p.ambiguous).toBe("later");
+    expect(await run("timezone", back.input, back.steps[0].p)).toMatch(/UTC\s+2026-11-01 05:30:00/);
   });
   it("units", async () => {
     expect(await run("units", "10 km to mi")).toBe("10 km = 6.21371 mi");

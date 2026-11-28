@@ -11,7 +11,7 @@ import { SITE } from "@/lib/tools";
 export const metadata: Metadata = {
   metadataBase: new URL(SITE.url),
   title: { default: "BoringX: small tools that each do one dull job", template: "%s | BoringX" },
-  description: "40 free browser tools: PDF, images, text, data, dev, generators and converters. Nothing is uploaded. No accounts, no limits, no watermarks.",
+  description: "41 free browser tools: PDF, images, text, data, dev, generators and converters. Nothing is uploaded. No accounts, no limits, no watermarks.",
   applicationName: "BoringX",
   manifest: "/manifest.webmanifest",
   icons: { icon: [{ url: "/icon.svg", type: "image/svg+xml" }, { url: "/icon-192.png", sizes: "192x192" }], apple: "/apple-touch-icon.png" },

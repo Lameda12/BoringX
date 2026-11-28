@@ -51,13 +51,14 @@ export function jsonToTs(json: string, root = "Root", exportKw = true, readonly 
   const ex = exportKw ? "export " : "";
   const ro = readonly ? "readonly " : "";
   const uniq = (n: string) => { let x = n, i = 2; while (used.has(x)) x = n + i++; used.add(x); return x; };
-  const render = (t: T, hint: string): string => {
+  const rootName = uniq(pascal(root));
+  const render = (t: T, hint: string, isRoot = false): string => {
     switch (t.kind) {
       case "prim": return t.name;
-      case "arr": { if (!t.item) return "unknown[]"; const s = render(t.item, singular(hint)); return t.item.kind === "union" ? `(${s})[]` : `${s}[]`; }
+      case "arr": { if (!t.item) return "unknown[]"; const s = render(t.item, isRoot ? `${hint}Item` : singular(hint)); return t.item.kind === "union" ? `(${s})[]` : `${s}[]`; }
       case "union": return t.of.map((x) => render(x, hint)).join(" | ");
       case "obj": {
-        const name = uniq(pascal(hint));
+        const name = isRoot ? rootName : uniq(pascal(hint));
         const lines = [...t.props].map(([k, { t: pt, opt }]) => `  ${ro}${safeKey(k)}${opt ? "?" : ""}: ${render(pt, k)};`);
         decls.push(`${ex}interface ${name} {\n${lines.join("\n")}\n}`);
         return name;
@@ -65,8 +66,8 @@ export function jsonToTs(json: string, root = "Root", exportKw = true, readonly 
     }
   };
   const top = infer(v);
-  const r = render(top, root);
-  if (top.kind !== "obj") decls.push(`${ex}type ${uniq(pascal(root))} = ${r};`);
+  const r = render(top, rootName, true);
+  if (top.kind !== "obj") decls.push(`${ex}type ${rootName} = ${r};`);
   return decls.reverse().join("\n\n");
 }
 

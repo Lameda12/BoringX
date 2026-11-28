@@ -1,6 +1,7 @@
 import type { BlockDef } from "./types";
 import { area, num, sel, text, bool } from "./p";
 import { runCustomJs } from "./custom-js";
+import { runRegexJob } from "./regex-worker";
 
 export const builtinBlocks: BlockDef[] = [
   {
@@ -15,11 +16,10 @@ export const builtinBlocks: BlockDef[] = [
     run: (input, p) => {
       const find = String(p.find);
       if (!find) return input;
-      let re: RegExp;
       const flags = (p.all ? "g" : "") + (p.ignoreCase ? "i" : "");
-      try { re = new RegExp(p.regex ? find : find.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), flags); }
-      catch (e) { throw new Error(`Invalid regex: ${e instanceof Error ? e.message : e}`); }
-      return input.replace(re, String(p.with));
+      // A literal search cannot backtrack, so only user-written patterns go to the worker.
+      if (p.regex) return runRegexJob({ kind: "replace", input, find, with: String(p.with), all: Boolean(p.all), ignoreCase: Boolean(p.ignoreCase) }, "Find and replace block");
+      return input.replace(new RegExp(find.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), flags), String(p.with));
     },
   },
   {

@@ -4,6 +4,7 @@ export const loaders: Record<string, () => Promise<{ default: ComponentType }>> 
   "images-to-pdf": () => import("../tools/images-to-pdf"),
   "pdf-compress": () => import("../tools/pdf-compress"),
   "pdf-merge": () => import("../tools/pdf-merge"),
+  "pdf-organize": () => import("../tools/pdf-organize"),
   "pdf-split": () => import("../tools/pdf-split"),
   "pdf-to-images": () => import("../tools/pdf-to-images"),
   "image-compress": () => import("../tools/image-compress"),
