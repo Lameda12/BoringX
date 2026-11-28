@@ -40,7 +40,7 @@
   "devDependencies": {
     "@playwright/test": "^1.65.0",
     "@tailwindcss/postcss": "^4.3.5",
-    "@types/diff": "^7.0.2",
+    "@types/diff": "^8.0.0",
     "@types/node": "^26.6.6",
     "@types/papaparse": "^5.5.2",
     "@types/qrcode": "^1.5.6",
