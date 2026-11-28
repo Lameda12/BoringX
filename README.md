@@ -2,6 +2,8 @@
 
 Small tools that each do one dull job, entirely in your browser. 40 tools, plus a Sandbox for chaining them. No uploads, no accounts, no limits, no watermarks.
 
+Try it: [boringx.vercel.app](https://boringx.vercel.app) for the tool directory, or the [Sandbox](https://boringx.vercel.app/sandbox) to chain tools together. For example, chain **Clean List** → **SQL IN List** to sort a pasted column of IDs and drop case-insensitive duplicates, then get it back as an `IN (...)` clause.
+
 ![Home](docs/home.png)
 
 | Sandbox | A tool (dark theme) |
